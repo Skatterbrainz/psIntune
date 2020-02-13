@@ -10,9 +10,9 @@ See LICENSE in the project root for license information.
 
 #region Microsoft GitHub sample code
 
-$graphApiVersion = "beta"
+#$graphApiVersion = "beta"
 
-function Get-AuthToken {
+function get-AuthToken {
 	<#
 	.SYNOPSIS
 		This function is used to authenticate with the Graph API REST interface
@@ -106,7 +106,7 @@ function Get-AuthToken {
 	}
 }
 
-function Get-psIntuneAuth {
+function get-psIntuneAuth {
 	<#
 	.SYNOPSIS
 		Returns authentication token object
@@ -142,7 +142,126 @@ function Get-psIntuneAuth {
 	}
 }
 
-Function Get-psIntuneAzureADUser() {
+function get-MsGraphData($Path) {
+	<#
+	.SYNOPSIS
+		Returns MS Graph data from (beta) REST API query
+	.PARAMETER Path
+		REST API URI path suffix
+	.NOTES
+		This function was derived from https://www.dowst.dev/search-intune-for-devices-with-application-installed/
+		(Thanks to Matt Dowst)
+	#>
+	$FullUri = "https://graph.microsoft.com/$graphApiVersion/$Path"
+	[System.Collections.Generic.List[PSObject]]$Collection = @()
+	$NextLink = $FullUri
+	do {
+		$Result = Invoke-RestMethod -Method Get -Uri $NextLink -Headers $AuthHeader
+		if ($Result.'@odata.count') {
+			$Result.value | ForEach-Object{$Collection.Add($_)}
+		} 
+		else {
+			$Collection.Add($Result)
+		}
+		$NextLink = $Result.'@odata.nextLink'
+	} while ($NextLink)
+	return $Collection
+}
+
+function Get-ManagedDevices(){
+	<#
+	.SYNOPSIS
+		This function is used to get Intune Managed Devices from the Graph API REST interface
+
+	.DESCRIPTION
+		The function connects to the Graph API Interface and gets any Intune Managed Device
+
+	.PARAMETER IncludeEAS
+		Switch to include EAS devices (not included by default)
+
+	.PARAMETER ExcludeMDM
+		Switch to exclude MDM devices (not excluded by default)
+
+	.EXAMPLE
+		Get-ManagedDevices
+
+		Returns all managed devices but excludes EAS devices registered within the Intune Service
+
+	.EXAMPLE
+		Get-ManagedDevices -IncludeEAS
+
+		Returns all managed devices including EAS devices registered within the Intune Service
+
+	.NOTES
+		NAME: Get-ManagedDevices
+
+	.LINK
+		https://github.com/Skatterbrainz/ds-intune/blob/master/docs/Get-ManagedDevices.md
+	#>
+	[cmdletbinding()]
+	param (
+		[parameter(Mandatory)][string] $UserName,
+		[parameter()][string] $DeviceName = "",
+		[parameter()][switch] $IncludeEAS,
+		[parameter()][switch] $ExcludeMDM
+	)
+	#$graphApiVersion = "beta"
+	$Resource = "deviceManagement/managedDevices"
+	try {
+		Get-psIntuneAuth -UserName $UserName
+		$Count_Params = 0
+		if ($IncludeEAS.IsPresent){ $Count_Params++ }
+		if ($ExcludeMDM.IsPresent){ $Count_Params++ }
+		if ($Count_Params -gt 1) {
+			Write-Warning "Multiple parameters set, specify a single parameter -IncludeEAS, -ExcludeMDM or no parameter against the function"
+			#Write-Host
+			break
+		}
+		elseif ($IncludeEAS) {
+			Write-Verbose "IncludeEAS = true"
+			$uri = "https://graph.microsoft.com/$graphApiVersion/$Resource"
+		}
+		elseif ($ExcludeMDM) {
+			Write-Verbose "ExcludeMDM = true"
+			$uri = "https://graph.microsoft.com/$graphApiVersion/$Resource`?`$filter=managementAgent eq 'eas'"
+		}
+		else {
+			if (![string]::IsNullOrEmpty($DeviceName)) {
+				Write-Verbose "DeviceName = $DeviceName"
+				$uri = "https://graph.microsoft.com/$graphApiVersion/$Resource`?`$filter=deviceName eq '$DeviceName' and managementAgent eq 'mdm' and managementAgent eq 'easmdm'"
+			}
+			else {
+				Write-Verbose "Default = True"
+				$uri = "https://graph.microsoft.com/$graphApiVersion/$Resource`?`$filter=managementAgent eq 'mdm' and managementAgent eq 'easmdm'"
+			}
+			Write-Warning "EAS Devices are excluded by default, please use -IncludeEAS if you want to include those devices"
+			#Write-Host
+		}
+		$response = (Invoke-RestMethod -Uri $uri -Headers $authToken -Method Get)
+		$Devices = $response.Value
+		$DevicesNextLink = $response."@odata.nextLink"
+		while ($DevicesNextLink) {
+			$response = (Invoke-RestMethod -Uri $DevicesNextLink -Headers $authToken -Method Get)
+			$DevicesNextLink = $response."@odata.nextLink"
+			$Devices += $response.value 
+		}
+		$Devices
+	}
+	catch {
+		$ex = $_.Exception
+		$errorResponse = $ex.Response.GetResponseStream()
+		$reader = New-Object System.IO.StreamReader($errorResponse)
+		$reader.BaseStream.Position = 0
+		$reader.DiscardBufferedData()
+		$responseBody = $reader.ReadToEnd();
+		Write-Warning "Response content:`n$responseBody"
+		Write-Error "Request to $Uri failed with HTTP Status $($ex.Response.StatusCode) $($ex.Response.StatusDescription)"
+		Write-Host
+		break
+	}
+}
+
+function Get-psIntuneAzureADUser() {
 	<#
 	.SYNOPSIS
 		This function is used to get AAD Users from the Graph API REST interface
@@ -251,395 +370,160 @@ function Get-psIntuneAzureADDevices {
 	}
 }
 
-Function Get-MsGraphData($Path) {
-	<#
-	.SYNOPSIS
-		Returns MS Graph data from (beta) REST API query
-	.PARAMETER Path
-		REST API URI path suffix
-	.NOTES
-		This function was derived from https://www.dowst.dev/search-intune-for-devices-with-application-installed/
-		(Thanks to Matt Dowst)
-	#>
-	$FullUri = "https://graph.microsoft.com/$graphApiVersion/$Path"
-	[System.Collections.Generic.List[PSObject]]$Collection = @()
-	$NextLink = $FullUri
-	do {
-		$Result = Invoke-RestMethod -Method Get -Uri $NextLink -Headers $AuthHeader
-		if ($Result.'@odata.count') {
-			$Result.value | ForEach-Object{$Collection.Add($_)}
-		} 
-		else {
-			$Collection.Add($Result)
-		}
-		$NextLink = $Result.'@odata.nextLink'
-	} while ($NextLink)
-	return $Collection
-}
-
-Function Get-ManagedDevices(){
-	<#
-	.SYNOPSIS
-		This function is used to get Intune Managed Devices from the Graph API REST interface
-
-	.DESCRIPTION
-		The function connects to the Graph API Interface and gets any Intune Managed Device
-
-	.PARAMETER IncludeEAS
-		Switch to include EAS devices (not included by default)
-
-	.PARAMETER ExcludeMDM
-		Switch to exclude MDM devices (not excluded by default)
-
-	.EXAMPLE
-		Get-ManagedDevices
-
-		Returns all managed devices but excludes EAS devices registered within the Intune Service
-
-	.EXAMPLE
-		Get-ManagedDevices -IncludeEAS
-
-		Returns all managed devices including EAS devices registered within the Intune Service
-
-	.NOTES
-		NAME: Get-ManagedDevices
-
-	.LINK
-		https://github.com/Skatterbrainz/ds-intune/blob/master/docs/Get-ManagedDevices.md
-	#>
-	[cmdletbinding()]
-	param (
-		[parameter(Mandatory)][string] $UserName,
-		[parameter()][switch] $IncludeEAS,
-		[parameter()][switch] $ExcludeMDM
-	)
-	#$graphApiVersion = "beta"
-	$Resource = "deviceManagement/managedDevices"
-	try {
-		Get-psIntuneAuth -UserName $UserName
-		$Count_Params = 0
-		if ($IncludeEAS.IsPresent){ $Count_Params++ }
-		if ($ExcludeMDM.IsPresent){ $Count_Params++ }
-		if ($Count_Params -gt 1) {
-			Write-Warning "Multiple parameters set, specify a single parameter -IncludeEAS, -ExcludeMDM or no parameter against the function"
-			#Write-Host
-			break
-		}
-		elseif ($IncludeEAS) {
-			$uri = "https://graph.microsoft.com/$graphApiVersion/$Resource"
-		}
-		elseif ($ExcludeMDM) {
-			$uri = "https://graph.microsoft.com/$graphApiVersion/$Resource`?`$filter=managementAgent eq 'eas'"
-		}
-		else {
-			$uri = "https://graph.microsoft.com/$graphApiVersion/$Resource`?`$filter=managementAgent eq 'mdm' and managementAgent eq 'easmdm'"
-			Write-Warning "EAS Devices are excluded by default, please use -IncludeEAS if you want to include those devices"
-			#Write-Host
-		}
-		$response = (Invoke-RestMethod -Uri $uri -Headers $authToken -Method Get)
-		$Devices = $response.Value
-		$DevicesNextLink = $response."@odata.nextLink"
-		while ($DevicesNextLink) {
-			$response = (Invoke-RestMethod -Uri $DevicesNextLink -Headers $authToken -Method Get)
-			$DevicesNextLink = $response."@odata.nextLink"
-			$Devices += $response.value 
-		}
-		$Devices
-	}
-	catch {
-		$ex = $_.Exception
-		$errorResponse = $ex.Response.GetResponseStream()
-		$reader = New-Object System.IO.StreamReader($errorResponse)
-		$reader.BaseStream.Position = 0
-		$reader.DiscardBufferedData()
-		$responseBody = $reader.ReadToEnd();
-		Write-Warning "Response content:`n$responseBody"
-		Write-Error "Request to $Uri failed with HTTP Status $($ex.Response.StatusCode) $($ex.Response.StatusDescription)"
-		Write-Host
-		break
-	}
-}
-
 #endregion 
 
-function Get-psIntuneDevices {
+function Get-psIntuneDevice {
 	<#
 	.SYNOPSIS
 		Returns dataset of Intune-managed devices with inventoried apps
-
 	.DESCRIPTION
 		Returns dataset of Intune-managed devices with inventoried apps
-
 	.PARAMETER UserName
 		UserPrincipalName for authentication request
-
+	.PARAMETER DeviceName
+		Filter query to just one specified device by name. Default is query all devices
 	.PARAMETER ShowProgress
 		Display progress as data is exported (default is silent / no progress shown)
-
-	.PARAMETER Detailed
-		Optional expanded list of device properties which includes:
-		* DeviceName, DeviceID, Manufacturer, Model, MemoryGB, DiskSizeGB, FreeSpaceGB,	EthernetMAC, 
-		  SerialNumber, OSName, OSVersion, Ownership, Category, LastSyncTime, UserName, Apps
-		* The default return property set: DeviceName, DeviceID, OSName, OSVersion, LastSyncTime, UserName, Apps
-		* Note that for either case, Apps will be set to $null if parameter -NoApps is used
-
-	.PARAMETER NoApps
-		Exclude installed Applications data from return dataset
-		This reduces overall query time significantly!
-
+	.PARAMETER Detail
+		Controls the level of granularity of the results:
+		* Summary - returns basic device information only
+		* Detailed - returns detailed device information
+		* Full - returns detailed device information with installed applications
+		* Raw - returns raw Graph API results only
 	.EXAMPLE
-		$devices = Get-psIntuneDevices -UserName "john.doe@contoso.com"
+		$devices = Get-psIntuneDevice -UserName "john.doe@contoso.com" -DeviceName "Desktop123" -Detail Detailed
 
-		Returns results of online request to variable $devices
-
+		Returns detailed data for one device without installed applications
 	.EXAMPLE
-		$devices = Get-psIntuneDevices -UserName "john.doe@contoso.com" -ShowProgress
+		$devices = Get-psIntuneDevice -UserName "john.doe@contoso.com"
 
-		Returns results of online request to variable $devices while displaying concurrent progress
-
+		Returns summary data without applications
 	.EXAMPLE
-		$devices = Get-psIntuneDevices -UserName "john.doe@contoso.com" -Detailed -NoApps
+		$devices = Get-psIntuneDevice -UserName "john.doe@contoso.com" -ShowProgress
 
-		Returns detailed results of online request to variable $devices without installed applications data
-
+		Returns summary data without applications and shows progress during processing
 	.EXAMPLE
-		$devices = Get-psIntuneDevices -UserName "john.doe@contoso.com" -NoApps
+		$devices = Get-psIntuneDevice -UserName "john.doe@contoso.com" -Detail -Full -ShowProgress
 
-		Returns summary results of online request to variable $devices without installed applications data
-		This is the fastest query option of all the parameter options
-
+		Returns detailed data with applications for each device and shows progress during processing
 	.NOTES
-		NAME: Get-psIntuneDevices
-
+		NAME: Get-psIntuneDevice
 	.LINK
-		https://github.com/Skatterbrainz/ds-intune/blob/master/docs/Get-psIntuneDevices.md
-
+		https://github.com/Skatterbrainz/ds-intune/blob/master/docs/Get-psIntuneDevice.md
 	#>
 	[CmdletBinding()]
-	param(
+	[OutputType([hashtable])]
+	param (
 		[parameter(Mandatory)][string] $UserName,
+		[parameter()][string] $DeviceName = "",
+		[parameter()][ValidateSet('Full','Detailed','Summary','Raw')][string] $Detail = 'Summary',
 		[parameter()][switch] $ShowProgress,
-		[parameter()][switch] $Detailed,
-		[parameter()][switch] $NoApps
+		[parameter()][string] $graphApiVersion = "beta"
 	)
-	#if ($UserName) { Get-psIntuneAuth -UserName $UserName } else { Get-psIntuneAuth }
-	$Devices = Get-ManagedDevices -UserName $UserName
-	Write-Host "returned $($Devices.Count) managed devices"
-	if ($Devices) {
-		if ($Detailed) {
-			Write-Host "getting detailed device properties (this may take a few minutes)..."
+	try {
+		if (![string]::IsNullOrEmpty($DeviceName)) {
+			$devices = Get-ManagedDevices -Username $UserName -DeviceName $DeviceName
 		}
 		else {
-			Write-Host "getting device properties..."
+			$devices = Get-ManagedDevices -UserName $UserName
 		}
-		$dx = 1
 		$dcount = $Devices.Count
+		$dx = 1
+		Write-Verbose "returned $dcount devices"
+		if ($Detail -eq 'Full') {
+			Write-Warning "Full option takes the longest to process. This may take a few minutes."
+		}
 		foreach ($Device in $Devices){
 			if ($ShowProgress) { 
 				Write-Progress -Activity "Found $dcount" -Status "$dx of $dcount" -PercentComplete $(($dx/$dcount)*100) -id 1
 			}
 			$DeviceID = $Device.id
-			$uri = "https://graph.microsoft.com/$graphApiVersion/deviceManagement/manageddevices('$DeviceID')?`$expand=detectedApps"
-			if (!$NoApps) { 
-				$DetectedApps = (Invoke-RestMethod -Uri $uri -Headers $authToken -Method Get).detectedApps 
-			}
-			$dx++
 			$LastSync = $Device.lastSyncDateTime
 			$SyncDays = (New-TimeSpan -Start $LastSync -End (Get-Date)).Days
-			
-			if ($Detailed) {
-				$compliant = $($Device.complianceState -eq $True)
-				$disksize  = [math]::Round(($Device.totalStorageSpaceInBytes / 1GB),2)
-				$freespace = [math]::Round(($Device.freeStorageSpaceInBytes / 1GB),2)
-				$mem       = [math]::Round(($Device.physicalMemoryInBytes / 1GB),2)
-				[pscustomobject]@{
-					DeviceName   = $Device.DeviceName
-					DeviceID     = $DeviceID
-					Manufacturer = $Device.manufacturer
-					Model        = $Device.model 
-					UserName     = $Device.userDisplayName
-					EthernetMAC  = $Device.ethernetMacAddress
-					WiFiMAC      = $Device.WiFiMacAddress
-					MemoryGB     = $mem
-					DiskSizeGB   = $disksize
-					FreeSpaceGB  = $freespace
-					SerialNumber = $Device.serialNumber 
-					OSName       = $Device.operatingSystem 
-					OSVersion    = $Device.osVersion
-					Ownership    = $Device.ownerType
-					Category     = $Device.deviceCategoryDisplayName
-					EnrollDate   = $Device.enrolledDateTime
-					LastSyncTime = $LastSync
-					LastSyncDays = $SyncDays
-					Compliant    = $compliant
-					AutoPilot    = $Device.autopilotEnrolled
-					Apps         = $DetectedApps
+			switch ($Detail) {
+				'Summary' {
+					[pscustomobject]@{
+						DeviceName   = $Device.DeviceName
+						DeviceID     = $DeviceID
+						UserName     = $Device.userDisplayName
+						OSName       = $Device.operatingSystem 
+						OSVersion    = $Device.osVersion
+						LastSyncTime = $LastSync
+						LastSyncDays = $SyncDays
+					}	
 				}
-			}
-			else {
-				[pscustomobject]@{
-					DeviceName   = $Device.DeviceName
-					DeviceID     = $DeviceID
-					UserName     = $Device.userDisplayName
-					OSName       = $Device.operatingSystem 
-					OSVersion    = $Device.osVersion
-					LastSyncTime = $LastSync
-					LastSyncDays = $SyncDays
-					Apps         = $DetectedApps
+				'Detailed' {
+					$compliant = $($Device.complianceState -eq $True)
+					$disksize  = [math]::Round(($Device.totalStorageSpaceInBytes / 1GB),2)
+					$freespace = [math]::Round(($Device.freeStorageSpaceInBytes / 1GB),2)
+					$mem       = [math]::Round(($Device.physicalMemoryInBytes / 1GB),2)
+					[pscustomobject]@{
+						DeviceName   = $Device.DeviceName
+						DeviceID     = $DeviceID
+						Manufacturer = $Device.manufacturer
+						Model        = $Device.model 
+						UserName     = $Device.userDisplayName
+						EthernetMAC  = $Device.ethernetMacAddress
+						WiFiMAC      = $Device.WiFiMacAddress
+						MemoryGB     = $mem
+						DiskSizeGB   = $disksize
+						FreeSpaceGB  = $freespace
+						SerialNumber = $Device.serialNumber 
+						OSName       = $Device.operatingSystem 
+						OSVersion    = $Device.osVersion
+						Ownership    = $Device.ownerType
+						Category     = $Device.deviceCategoryDisplayName
+						EnrollDate   = $Device.enrolledDateTime
+						LastSyncTime = $LastSync
+						LastSyncDays = $SyncDays
+						Compliant    = $compliant
+						AutoPilot    = $Device.autopilotEnrolled
+					}	
 				}
-			}
-		}
-	}
-	else {
-		Write-Host "No Intune Managed Devices found..." -f green
-		Write-Host
-	}
-}
-
-function Get-psIntuneDevicesRaw {
-	<#
-	.SYNOPSIS
-		Returns raw data for all Intune devices
-
-	.DESCRIPTION
-		Returns raw data for all Intune devices
-
-	.EXAMPLE
-		$allDevices = Get-psIntuneDevicesRaw
-
-	.NOTES
-		NAME: Get-psIntuneDevicesRaw
-		Alias for Get-ManagedDevices()
-
-	.LINK
-		https://github.com/Skatterbrainz/ds-intune/blob/master/docs/Get-psIntuneDevicesRaw.md
-
-	#>
-	[CmdletBinding()]
-	param ()
-	Get-ManagedDevices
-}
-
-function Get-psIntuneDevicesummary {
-	<#
-	.SYNOPSIS
-		Returns Summary by Property Set
-
-	.DESCRIPTION
-		Returns grouped data by property set
-
-	.PARAMETER Property
-		Name of device property to group dataset on. Default is OSName
-
-	.PARAMETER DataSet
-		Devices dataset returned from Get-psIntuneDevices
-
-	.PARAMETER UserName
-		Required for invoked query if DataSet is $null
-
-	.PARAMETER ShowProgress
-		Show progress indicator while querying dataset
-
-	.EXAMPLE
-		$devices = Get-psIntuneDevices -UserName "john.doe@contoso.com"
-		Get-psIntuneDevicesummary -DataSet $devices -Property Model -ShowProgress
-
-		Query against data returned from direct query and saved to $devices
-
-	.EXAMPLE
-		Get-psIntuneDevicesummary -Property Model -UserName "john.doe@contoso.com" -ShowProgress
-
-		Query data directly from Intune graph source
-
-	.NOTES
-		Name: Get-psIntuneDevicesummary
-
-	.LINK
-		https://github.com/Skatterbrainz/ds-intune/blob/master/docs/Get-psIntuneDevicesummary.md
-
-	#>
-	[CmdletBinding()]
-	param (
-		[parameter()][ValidateSet('OSName','Model','Manufacturer','ComplianceState','AutoPilotEnrolled','Ownership')] $Property = 'OSName',
-		[parameter()] $DataSet,
-		[parameter()][string] $UserName,
-		[parameter()][switch] $ShowProgress
-	)
-	if ($null -eq $DataSet) {
-		$DataSet = Get-psIntuneDevices -UserName $UserName -Detailed -ShowProgress:$ShowProgress -NoApps
-	}
-	$DataSet | 
-		Where-Object {![string]::IsNullOrEmpty($_."$Property")} |
-			Select-Object DeviceName,$Property |
-				Sort-Object DeviceName -Unique |
-					Group-Object $Property |
-						Select-Object Count,Name
-}
-
-function Get-psIntuneStaleDevices {
-	<#
-	.SYNOPSIS
-		Returns devices which have not synchronized within the last N (-Days)
-
-	.DESCRIPTION
-		Returns Intune device accounts which have not synchronized within
-		the last <N> days as specified by -Days
-
-	.PARAMETER DataSet
-		Data returned from Get-DsIntuneDeviceData()
-
-	.PARAMETER Days
-		Number of days to allow, from 1 to 1000 (default is 30)
-
-	.PARAMETER Detailed
-		Returns detailed property set for each device (see Get-DsIntuneDeviceData) if -DataSet is $null
-
-	.PARAMETER ShowProgress
-		Displays progress during query if -DataSet is $null
-
-	.EXAMPLE
-		Get-psIntuneStaleDevices -DataSet $devices
-
-		Returns devices which have not synchronized with AzureAD in the last 30 days
-
-	.EXAMPLE
-		Get-psIntuneStaleDevices -DataSet $devices -Detailed -Days 60
-
-		Returns devices with detailed properties which have not synchronized with AzureAD in the last 60 days
-
-	.NOTES
-		NAME: Get-psIntuneStaleDevices
-
-	.LINK
-		https://github.com/Skatterbrainz/ds-intune/blob/master/docs/Get-psIntuneStaleDevices.md
-	#>
-	[CmdletBinding()]
-	param (
-		[parameter()] $DataSet,
-		[parameter()][string] $UserName,
-		[parameter()][ValidateRange(1,1000)][int] $Days = 30,
-		[parameter()][switch] $Detailed,
-		[parameter()][switch] $ShowProgress
-	)
-	try {
-		if (!$DataSet) {
-			Write-Host "querying Intune devices" -ForegroundColor Cyan
-			$DataSet = Get-psIntuneDevices -UserName $UserName -ShowProgress:$ShowProgress -Detailed:$Detailed -NoApps
-		}
-		else {
-			Write-Verbose "re-querying $($DataSet.Count) devices from existing dataset"			
-		}
-		$result = $DataSet | Where-Object {($null -eq $_.LastSyncTime) -or $(New-TimeSpan -Start $_.LastSyncTime -End (Get-Date)).Days -gt $Days}
+				'Full' {
+					$uriApps = "https://graph.microsoft.com/$graphApiVersion/deviceManagement/manageddevices('$DeviceID')?`$expand=detectedApps"
+					$DetectedApps = (Invoke-RestMethod -Uri $uriApps -Headers $authToken -Method Get).detectedApps
+					$compliant = $($Device.complianceState -eq $True)
+					$disksize  = [math]::Round(($Device.totalStorageSpaceInBytes / 1GB),2)
+					$freespace = [math]::Round(($Device.freeStorageSpaceInBytes / 1GB),2)
+					$mem       = [math]::Round(($Device.physicalMemoryInBytes / 1GB),2)
+					[pscustomobject]@{
+						DeviceName   = $Device.DeviceName
+						DeviceID     = $DeviceID
+						Manufacturer = $Device.manufacturer
+						Model        = $Device.model 
+						UserName     = $Device.userDisplayName
+						EthernetMAC  = $Device.ethernetMacAddress
+						WiFiMAC      = $Device.WiFiMacAddress
+						MemoryGB     = $mem
+						DiskSizeGB   = $disksize
+						FreeSpaceGB  = $freespace
+						SerialNumber = $Device.serialNumber 
+						OSName       = $Device.operatingSystem 
+						OSVersion    = $Device.osVersion
+						Ownership    = $Device.ownerType
+						Category     = $Device.deviceCategoryDisplayName
+						EnrollDate   = $Device.enrolledDateTime
+						LastSyncTime = $LastSync
+						LastSyncDays = $SyncDays
+						Compliant    = $compliant
+						AutoPilot    = $Device.autopilotEnrolled
+						Apps         = $DetectedApps
+					}	
+				}
+				'Raw' {
+					$Device
+				}
+			} # switch
+			$dx++
+		} # foreach
 	}
 	catch {
-		Write-Error $_.Exception.Message
-	}
-	finally {
-		$result
+		Write-Error $_.Exception.Message 
 	}
 }
 
-function Get-psIntuneInstalledApps ($DataSet) {
+function Get-psIntuneInstalledApps {
 	<#
 	.SYNOPSIS
 		Returns App inventory data from Intune Device data set
@@ -661,15 +545,19 @@ function Get-psIntuneInstalledApps ($DataSet) {
 		https://github.com/Skatterbrainz/ds-intune/blob/master/docs/Get-psIntuneInstalledApps.md
 
 	#>
-	if (!$DataSet) {
-		Write-Warning "device accounts dataset from Get-psIntuneDevices required"
-		break
-	}
+	[CmdletBinding()]
+	param (
+		[parameter(Mandatory=$True)]
+		[ValidateNotNull()] $DataSet,
+		[parameter()][switch] $GroupByName
+	)
 	$badnames = ('. .','. . .','..','...')
-	foreach ($row in $Dataset) {
-		$devicename = $row.DeviceName
-		if ($null -ne $row.Apps) {
-			$apps = $row.Apps
+	Write-Verbose "reading $($DataSet.Count) objects"
+	$appcount = 0
+	$result = $DataSet | Foreach-Object {
+		$devicename = $_.DeviceName
+		$apps = $_.Apps 
+		if ($null -ne $Apps) {
 			foreach ($app in $apps) {
 				$displayName = $($app.displayName).ToString().Trim()
 				if (![string]::IsNullOrEmpty($displayName)) {
@@ -693,7 +581,20 @@ function Get-psIntuneInstalledApps ($DataSet) {
 					}
 				}
 			}
+			$appcount++
 		}
+		else {
+			Write-Verbose "$devicename - has no apps"
+		}
+	}
+	if ($appcount -eq 0) {
+		Write-Warning "DataSet objects have no applications linked. Use [-Detail Full] option with Get-psIntuneDevice"
+	}
+	if ($GroupByName) {
+		$result | Group-Object -Property ProductName | Select-Object Count,Name | Sort-Object Name -Unique
+	}
+	else {
+		$result
 	}
 }
 
@@ -774,235 +675,105 @@ function Get-psIntuneDevicesWithApp {
 	$FoundApp
 }
 
-function Get-psIntuneInstalledAppCounts {
-	<#
-	.SYNOPSIS
-		Return Applications grouped and sorted by Installation Counts
-
-	.DESCRIPTION
-		Return Applications grouped and sorted by Installation Counts in descending order
-
-	.PARAMETER AppDataSet
-		Applications dataset returned from Get-psIntuneInstalledApps()
-
-	.PARAMETER RowCount
-		Limit to first (N) rows (default is 0 / returns all rows)
-
-	.EXAMPLE
-		$apps = Get-psIntuneInstalledApps -DataSet $devices
-		$top20 = Get-psIntuneInstalledAppCounts -AppDataSet $apps -RowCount 20
-
-	.NOTES
-		NAME: Get-psIntuneInstalledAppCounts
-
-	.LINK
-		https://github.com/Skatterbrainz/ds-intune/blob/master/docs/Get-psIntuneInstalledAppCounts.md
-
-	#>
-	param (
-		[parameter()] $AppDataSet,
-		[parameter()][int] $RowCount = 0
-	)
-	try {
-		$result = $AppDataSet | Group-Object -Property ProductName,ProductVersion | Select-Object Count,Name | Sort-Object Count -Descending
-		if ($RowCount -gt 0) { 
-			$result | Select-Object -First $RowCount
-		}
-		else {
-			$result
-		}
-	}
-	catch {
-		Write-Error $_.Exception.Message
-	}
-}
-
-function Export-psIntuneInventory {
-	<#
-	.SYNOPSIS
-		Export Intune Device Applications Inventory to Excel Workbook
-
-	.DESCRIPTION
-		Export Intune Device Applications Inventory to Excel Workbook
-
-	.PARAMETER DeviceData
-		Device data returned from Get-DsIntuneDeviceData(). If not provided, Get-DsIntuneDeviceData() is invoked automatically.
-		Passing Device data to -DeviceData can save significant processing time.
-
-	.PARAMETER Title
-		Title used for prefix of XLSX filename
-
-	.PARAMETER UserName
-		UserPrincipalName for authentication
-
-	.PARAMETER Overwrite
-		Replace output file it exists
-
-	.PARAMETER DaysOld
-		Filter stale accounts by specified number of days (range 10 to 1000, default = 180)
-
-	.PARAMETER Show
-		Open workbook in Excel when completed (requires Excel on host machine)
-
-	.PARAMETER Distinct
-		Filter DeviceName+AppName only to remove duplicates arising from different versions
-
-	.PARAMETER DeviceOS
-		Filter devices and derivative datasets to specified OS. 
-		Options include: Windows, iOS, Android, or All. Default is 'All'
-
-	.EXAMPLE
-		Export-psIntuneInventory -Title "Contoso" -UserName "john.doe@contoso.com" -Overwrite
-
-		Queries all Intune devices and applications to generate output file
-
-	.EXAMPLE
-		$devices = Get-psIntuneDevices -UserName "john.doe@contoso.com"
-		$apps = Get-psIntuneInstalledApps -DataSet $devices
-
-		Export-psIntuneInventory -DeviceData $devices -Title "Contoso" -UserName "john.doe@contoso.com" -Overwrite -Show
-		
-		Processes existing data ($devices) to generate output file with "Contoso" in the filename, and 
-		display the results in Excel when finished
-	
-	.EXAMPLE
-		$devices = Get-psIntuneDevices -UserName "john.doe@contoso.com"
-		$apps = Get-psIntuneInstalledApps -DataSet $devices
-		Export-psIntuneInventory -DeviceData $devices -Title "Contoso" -UserName "john.doe@contoso.com" -Overwrite -Show -Distinct
-		
-		Processes existing data ($devices) to generate output file with "Contoso" in the filename, and 
-		display the unique App results in Excel when finished
-
-	.EXAMPLE
-		$devices = Get-psIntuneDevices -UserName "john.doe@contoso.com" | Where-Object {$_.OSName -eq 'Windows'}
-		$apps = Get-psIntuneInstalledApps -DataSet $devices
-		Export-psIntuneInventory -DeviceData $devices -Title "Contoso" -UserName "john.doe@contoso.com" -Overwrite -Show -Distinct
-		
-		Processes existing data ($devices) for only Windows devices, to generate output file with "Contoso" in the
-		filename, and display the unique App results in Excel when finished
-
-	.EXAMPLE
-		$devices = Get-psIntuneDevices -UserName "john.doe@contoso.com" -DeviceOS 'Windows'
-		$apps = Get-psIntuneInstalledApps -DataSet $devices
-		Export-psIntuneInventory -DeviceData $devices -Title "Contoso" -UserName "john.doe@contoso.com" -Overwrite -Show -Distinct
-		
-		Processes existing data ($devices) for only Windows devices, to generate output file with "Contoso" in the
-		filename, and display the unique App results in Excel when finished
-
-	.NOTES
-		NAME: Export-psIntuneInventory
-		Requires PS module ImportExcel
-
-	.LINK
-		https://github.com/Skatterbrainz/ds-intune/blob/master/docs/Export-psIntuneInventory.md
-	#>
+function Write-psIntuneDeviceReport {
 	[CmdletBinding()]
 	param (
-		[parameter()] $DeviceData,
+		[parameter()] $DataSet,
 		[parameter()][string] $OutputFolder = "$($env:USERPROFILE)\Documents",
-		[parameter(Mandatory)][ValidateNotNullOrEmpty()][string] $Title,
-		[parameter()][ValidateNotNullOrEmpty()][string] $UserName,
-		[parameter()][switch] $Overwrite,
-		[parameter()][switch] $Distinct,
-		[parameter()][int][ValidateRange(10,1000)] $DaysOld = 180,
+		[parameter()][string] $Title = "",
 		[parameter()][string][ValidateSet('All','Windows','Android','iOS')] $DeviceOS = 'All',
+		[parameter()][ValidateRange(1,1000)][int] $StaleLimit = 180,
+		[parameter()][ValidateRange(0,100)][int] $LowDiskGB = 20,
+		[parameter()][switch] $Overwrite,
 		[parameter()][switch] $Show
 	)
-	if (!(Get-Module ImportExcel -ListAvailable)) {
-		Write-Warning "This function requires the PowerShell module ImportExcel, which is not installed."
+	$time1 = Get-Date
+	Write-Host "Gathering data to generate report"
+	$xlFile = "$OutputFolder\IntuneDevices`_$Title`_$(Get-Date -f 'yyyy-MM-dd').xlsx"
+	Write-Verbose "output file = $xlFile"
+	if ((Test-Path $xlFile) -and (!$Overwrite)) {
+		Write-Warning "Output file exists [$xlFile]. Use -Overwrite to replace."
 		break
 	}
-	if ($null -eq $DeviceData) {
-		if ([string]::IsNullOrEmpty($UserName)) {
-			Write-Warning "UserName must be provided when DeviceData is not provided."
-			break
-		}
+	if ($null -eq $DataSet) {
+		Write-Host "Requesting new query results..."
+		$devs = Get-psIntuneDevice -Detail Full -ShowProgress
 	}
-	try {
-		$time1 = Get-Date
-		$xlFile = "$OutputFolder\$Title`_IntuneDevices_$(Get-Date -f 'yyyy-MM-dd').xlsx"
-		Write-Verbose "output file = $xlFile"
-		if ((Test-Path $xlFile) -and (!$Overwrite)) {
-			Write-Warning "Output file exists [$xlFile]. Use -Overwrite to replace."
-			break
-		}
-		if (!$DeviceData) {
-			Write-Host "Requesting managed devices data from Intune" -ForegroundColor Cyan
-			$DeviceData = Get-psIntuneDevices -UserName $UserName -Detailed
-		}
-		else {
-			Write-Warning "Device dataset should be derived with [-Detailed] option, to get the full set of properties."
-		}
-		if ($DeviceOS -ne 'All') {
-			Write-Host "Filtering Intune devices by OSName: $DeviceOS"
-			$DeviceData = $DeviceData | Where-Object {$_.OSName -eq $DeviceOS}
-			Write-Host "Returned $($DeviceData.Count) devices running $DeviceOS"
-		}
-		Write-Host "Querying: installed applications for each device"
-		$applist = Get-psIntuneInstalledApps -DataSet $DeviceData
-		if ($Distinct) {
-			Write-Host "Filtering: unique product names per device"
-			$applist2 = $applist | Select-Object DeviceName,ProductName | Sort-Object ProductName,DeviceName -Unique
-		}
-
-		Write-Host "Querying: AzureAD devices (you may be prompted for credentials)" -ForegroundColor Green
-		$aaddevices  = Get-psIntuneAzureADDevices
-		Write-Host "Found $($aaddevices.Count) AzureAD device accounts"
-		if ($DeviceOS -ne 'All') {
-			Write-Host "Filtering AzureAD devices by OSName: $DeviceOS"
-			$aaddevices = $aaddevices | Where-Object {$_.OSName -match $DeviceOS}
-			Write-Host "Returned $($aaddevices.Count) AzureAD devices running $DeviceOS"
-		}
-
-		Write-Host "Querying: Stale devices (more than $DaysOld days)"
-		$stale = Get-psIntuneStaleDevices -DataSet $DeviceData -Days $DaysOld
-		Write-Host "Found $($stale.Count) devices not synchronized in the last $DaysOld days"
-
-		Write-Host "Crunching statistics and stuff..."
-		$stats = @()
-		$stats += $aawin | Group-Object -Property IsCompliant | Select-Object Name,Count | % {[pscustomobject]@{Name = 'Compliant'; Property = $_.Name; Value = $_.Count}}
-		$stats += $aawin | Group-Object -Property DirSyncEnabled | Select-Object Name,Count | % {[pscustomobject]@{Name = 'DirSyncEnabled'; Property = $_.Name; Value = $_.Count}}
-		$stats += $aawin | Group-Object -Property TrustType | Select-Object Name,Count | % {[pscustomobject]@{Name = 'TrustType'; Property = $_.Name; Value = $_.Count}}
-		$stats += $aawin | Group-Object -Property OSVersion | Select-Object Name,Count | ?{$_.Name -ne '' -and $_.Count -gt 5} | Sort-Object Count -Descending | % {[pscustomobject]@{Name = 'OSVersion'; Property = $_.Name; Value = $_.Count}}
-		$stats += $aadevs | Group-Object -Property LastLogonDays | ?{$_.Name -gt 180 -and $_.Count -gt 10} | %{[pscustomobject]@{Name = 'DaysSinceLogon'; Count = $_.Count; Property = [int]$_.Name}} | Sort-Object Property -Descending
-		$stats += $devices | Group-Object -Property Manufacturer,Model | Select-Object Name,Count | Sort-Object Count -Descending | %{[pscustomobject]@{Name = 'Models'; Property = $_.Name; Value = $_.Count}}
-		$stats += $devices | Group-Object -Property Ownership | Select-Object Name,Count | Sort-Object Count -Descending | %{[pscustomobject]@{Name = 'Ownership'; Property = $_.Name; Value = $_.Count}}
-		$stats += $devices | Group-Object -Property Category | Select-Object Name,Count | Sort-Object Count -Descending | %{[pscustomobject]@{Name = 'Category'; Property = $_.Name; Value = $_.Count}}
-		$stats += $devices | Group-Object -Property UserName | Select-Object Name,Count | Where-Object {$_.Count -gt 1 -and $_.Name -ne ''} | Sort-Object Count -Descending | Select-Object -First 25 | %{[pscustomobject]@{Name = 'UserName'; Property = $_.Name; Value = $_.Count}}
-
-		Write-Host "Exporting data to workbook..."
-		$stats |
-			Export-Excel -Path $XlFile -WorksheetName "Summary" -ClearSheet -AutoSize -FreezeTopRow -AutoFilter
-		$aaddevices | 
-			Export-Excel -Path $xlFile -WorksheetName "AADDevices" -ClearSheet -AutoSize -FreezeTopRowFirstColumn -AutoFilter
-		$DeviceData | Where-Object {$_.DeviceName -ne 'User deleted for this device'} | 
-			Select-Object * -ExcludeProperty Apps | Sort-Object DeviceName -Unique |
-				Export-Excel -Path $xlFile -WorksheetName "IntuneDevices" -ClearSheet -AutoSize -FreezeTopRow -AutoFilter
-		$stale | Select-Object * -ExcludeProperty Apps |	
-			Export-Excel -Path $XlFile -WorksheetName "StaleDevices" -ClearSheet -AutoSize -FreezeTopRow -AutoFilter 
-		$DeviceData | Where-Object {$_.DeviceName -eq 'User deleted for this device'} | 
-			Select-Object * -ExcludeProperty Apps | Sort-Object DeviceName,Manufacturer,Model |
-				Export-Excel -Path $xlFile -WorksheetName "UserDeletedDevices" -ClearSheet -AutoSize -FreezeTopRow -AutoFilter
-		$DeviceData | Where-Object {$_.FreeSpaceGB -lt 20 -and $_.OSName -eq 'Windows'} |
-			Select-Object * -ExcludeProperty Apps | Sort-Object DeviceName,Manufacturer,Model |
-				Export-Excel -Path $xlFile -WorksheetName "LowDisk" -ClearSheet -AutoSize -FreezeTopRow -AutoFilter
-		$applist | 
-			Sort-Object ProductName |
-				Export-Excel -Path $xlFile -WorksheetName "IntuneApps" -ClearSheet -AutoSize -FreezeTopRow -AutoFilter
-		if ($null -ne $applist2) {
-			$applist2 | Sort-Object ProductName,ProductVersion |
-				Export-Excel -Path $xlFile -WorksheetName "DistinctApps" -ClearSheet -AutoSize -FreezeTopRow -AutoFilter
-		}
-
-		Write-Host "Results saved to: $xlFile" -ForegroundColor Green
-		$time2 = Get-Date
-		$rt = New-TimeSpan -Start $time1 -End $time2
-		Write-Host "Total runtime: $($rt.Hours)`:$($rt.Minutes)`:$($rt.Seconds) (hh`:mm`:ss)" -ForegroundColor Cyan
-		if ($Show) { Start-Process -FilePath "$xlFile" }
+	else {
+		$devs = $DataSet
 	}
-	catch {
-		Write-Error $_.Exception.Message
+	Write-Host "Returned $($devs.Count) devices"
+	if ($DeviceOS -ne 'All') {
+		Write-Verbose "filtering devices on OSName = $DeviceOS"
+		$devs = $devs | Where-Object {$_.OSName -match $DeviceOS}
+		Write-Verbose "filtered to $($devs.Count) devices with $DeviceOS"
 	}
+
+	Write-Host "Applying filter rule: Base Devices"
+	$intdevs   = $devs | Select-Object * -ExcludeProperty Apps
+	Write-Host "Applying filter rule: Device Models"
+	$models    = $devs | Select-Object Manufacturer,Model | Group-Object -Property Manufacturer,Model | Select-Object Count,Name | Sort-Object Count -Descending
+	Write-Host "Applying filter rule: Orphaned Devices"
+	$deldevs   = $devs | Where-Object {$_.DeviceName -eq 'User deleted for this device'} | Select-Object * -ExcludeProperty Apps
+	Write-Host "Applying filter rule: Duplicate Devices"
+	$dupedevs  = $devs | Select-Object DeviceName,DeviceID | Group-Object -Property DeviceName | Select-Object Count,Name
+	Write-Host "Applying filter rule: Stale Devices"
+	$staledevs = $devs | Where-Object {$_.LastSyncDays -ge $StaleLimit} | Select-Object DeviceName,DeviceID,Category,Ownership,Manufacturer,Model,UserName,SerialNumber,LastSyncTime,LastSyncDays,EnrollDate
+	Write-Host "Applying filter rule: Devices with Low Disk Space"
+	$lowdisk   = $devs | Where-Object {$_.FreeSpaceGB -lt $LowDiskGB} | Select-Object * -ExcludeProperty Apps
+	Write-Host "Applying filter rule: Software"
+	$apps      = Get-psIntuneInstalledApps -DataSet $devs 
+	Write-Host "Applying filter rule: Software Install Counts"
+	$appcounts = $apps | Group-Object -Property ProductName | Select-Object Count,Name | Sort-Object Name -Unique
+	Write-Host "Applying filter rule: Distinct Software Installs"
+	$distapps  = $apps | Select-Object ProductName,ProductType,DeviceName | Sort-Object ProductName -Unique
+	#$aadevs  = Get-psIntuneAzureADDevices
+	#Write-Host "Found $($aadevs.Count) AzureAD device accounts"
+	#if ($DeviceOS -ne 'All') {
+	#	Write-Host "Filtering AzureAD devices by OSName: $DeviceOS"
+	#	$aadevs = $aadevs | Where-Object {$_.OSName -match $DeviceOS}
+	#	Write-Host "Returned $($aadevs.Count) AzureAD devices running $DeviceOS"
+	#}
+
+	Write-Host "Crunching statistics and stuff..."
+	$stats = @()
+	$stats += $intdevs | Group-Object -Property OSName,OSVersion | Sort-Object Count -Descending | Select-Object Name,Count | %{[pscustomobject]@{Name = 'OperatingSystem'; Property = $_.Name; Value = $_.Count}}
+	$stats += $intdevs | Group-Object -Property Manufacturer,Model | Select-Object Name,Count | Sort-Object Count -Descending | %{[pscustomobject]@{Name = 'Models'; Property = $_.Name; Value = $_.Count}}
+	$stats += $intdevs | Group-Object -Property Ownership | Select-Object Name,Count | Sort-Object Count -Descending | %{[pscustomobject]@{Name = 'Ownership'; Property = $_.Name; Value = $_.Count}}
+	$stats += $intdevs | Group-Object -Property Category | Select-Object Name,Count | Sort-Object Count -Descending | %{[pscustomobject]@{Name = 'Category'; Property = $_.Name; Value = $_.Count}}
+	$stats += $intdevs | Group-Object -Property UserName | Select-Object Name,Count | Where-Object {$_.Count -gt 1 -and $_.Name -ne ''} | Sort-Object Count -Descending | Select-Object -First 25 | %{[pscustomobject]@{Name = 'UserName'; Property = $_.Name; Value = $_.Count}}
+	#$stats += $aadevs | Group-Object -Property IsCompliant | Select-Object Name,Count | % {[pscustomobject]@{Name = 'Compliant'; Property = $_.Name; Value = $_.Count}}
+	#$stats += $aadevs | Group-Object -Property DirSyncEnabled | Select-Object Name,Count | % {[pscustomobject]@{Name = 'DirSyncEnabled'; Property = $_.Name; Value = $_.Count}}
+	#$stats += $aadevs | Group-Object -Property TrustType | Select-Object Name,Count | % {[pscustomobject]@{Name = 'TrustType'; Property = $_.Name; Value = $_.Count}}
+	#$stats += $aadevs | Group-Object -Property OSVersion | Select-Object Name,Count | ?{$_.Name -ne '' -and $_.Count -gt 5} | Sort-Object Count -Descending | % {[pscustomobject]@{Name = 'OSVersion'; Property = $_.Name; Value = $_.Count}}
+	#$stats += $aadevs | Group-Object -Property LastLogonDays | ?{$_.Name -gt 180 -and $_.Count -gt 10} | %{[pscustomobject]@{Name = 'DaysSinceLogon'; Count = $_.Count; Property = [int]$_.Name}} | Sort-Object Property -Descending
+
+	Write-Host "Exporting datasets: Summary"
+	$stats | Export-Excel -Path $xlFile -WorksheetName "Summary" -ClearSheet -AutoSize -AutoFilter -FreezeTopRow
+	Write-Host "Exporting datasets: Devices"
+	$intdevs | Export-Excel -Path $xlFile -WorksheetName "Devices" -ClearSheet -AutoSize -AutoFilter -FreezeTopRowFirstColumn
+	Write-Host "Exporting datasets: Models"
+	$models | Export-Excel -Path $xlFile -WorksheetName "Models" -ClearSheet -AutoSize -AutoFilter -FreezeTopRow
+	Write-Host "Exporting datasets: Stale Devices"
+	$staledevs | Export-Excel -Path $xlFile -WorksheetName "StaleDevices" -ClearSheet -AutoSize -AutoFilter -FreezeTopRowFirstColumn
+	Write-Host "Exporting datasets: Duplicate Devices"
+	$dupedevs | Export-Excel -Path $xlFile -WorksheetName "Duplicates" -ClearSheet -AutoSize -AutoFilter -FreezeTopRow
+	Write-Host "Exporting datasets: Orphaned Devices"
+	$deldevs | Export-Excel -Path $xlFile -WorksheetName "Orphaned" -ClearSheet -AutoSize -AutoFilter -FreezeTopRowFirstColumn
+	Write-Host "Exporting datasets: Devices with Low Disk Space"
+	$lowdisk | Export-Excel -Path $xlFile -WorksheetName "LowDisk" -ClearSheet -AutoSize -AutoFilter -FreezeTopRowFirstColumn
+	Write-Host "Exporting datasets: Software"
+	$apps | Export-Excel -Path $xlFile -WorksheetName "Software" -ClearSheet -AutoSize -AutoFilter -FreezeTopRowFirstColumn
+	Write-Host "Exporting datasets: Software Install Counts"
+	$appcounts | Export-Excel -Path $xlFile -WorksheetName "InstallCounts" -ClearSheet -AutoSize -AutoFilter -FreezeTopRow
+	Write-Host "Exporting datasets: Software Unique Instances"
+	$distapps | Export-Excel -Path $xlFile -WorksheetName "SoftwareUnique" -ClearSheet -AutoSize -AutoFilter -FreezeTopRow
+
+	if ($Show) { Start-Process -FilePath "$xlFile" }
+	Write-Host "Export saved to $xlFile" -ForegroundColor Green
+	$time2 = Get-Date
+	$rt = New-TimeSpan -Start $time1 -End $time2
+	Write-Host "Total runtime: $($rt.Hours)`:$($rt.Minutes)`:$($rt.Seconds) (hh`:mm`:ss)" -ForegroundColor Cyan
 }
 
 function Invoke-psIntuneExcelQuery {
