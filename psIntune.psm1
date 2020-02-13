@@ -260,6 +260,7 @@ function Get-ManagedDevices(){
 		break
 	}
 }
+#endregion 
 
 function Get-psIntuneAzureADUser() {
 	<#
@@ -369,8 +370,6 @@ function Get-psIntuneAzureADDevices {
 		}
 	}
 }
-
-#endregion 
 
 function Get-psIntuneDevice {
 	<#
@@ -532,11 +531,11 @@ function Get-psIntuneInstalledApps {
 		Returns App inventory data from Intune Device data set
 
 	.PARAMETER DataSet
-		Data returned from Get-psIntuneDevices()
+		Data returned from Get-psIntuneDevice
 
 	.EXAMPLE
-		$devices = Get-psIntuneDevices -UserName "john.doe@contoso.com"
-		$applist = Get-DsIntuneDeviceApps -DataSet $devices
+		$devices = Get-psIntuneDevice -UserName "john.doe@contoso.com"
+		$applist = Get-psIntuneInstalledApps -DataSet $devices
 
 	.NOTES
 		NAME: Get-psIntuneInstalledApps
@@ -676,6 +675,33 @@ function Get-psIntuneDevicesWithApp {
 }
 
 function Write-psIntuneDeviceReport {
+	<#
+	.SYNOPSIS
+		Export Inventory Data to Excel Workbook
+	.DESCRIPTION
+		Export Intune Device inventory data to Excel Workbook
+	.PARAMETER DataSet
+		Device Data queried from Intune using Get-psIntuneDevice -Detail Full
+		If DataSet is not provided, data will be queried from Intune.
+	.PARAMETER OutputFolder
+		Path for output file. Default is current user Documents path
+	.PARAMETER Title
+		Title to use for output filename
+	.PARAMETER DeviceOS
+		Filter devices by operating system. Options: Android, iOS, Windows, All
+		Default is All
+	.PARAMETER StaleLimit
+		Number of days since last Intune synchronization to consider as a stale account
+		Default is 180
+	.PARAMETER LowDiskGB
+		Free disk space GB to indicate "low disk space".
+		Default is 20
+	.PARAMETER Overwrite
+		If output file exists, with same name, it will be overwritten.
+		Default is to abort if idential filename exists.
+	.PARAMETER Show
+		Display workbook when export is complete. Default is to not show
+	#>
 	[CmdletBinding()]
 	param (
 		[parameter()] $DataSet,
