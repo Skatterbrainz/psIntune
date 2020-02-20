@@ -790,6 +790,8 @@ function Write-psIntuneDeviceReport {
 		$stats += $aadevs | Group-Object -Property TrustType | Select-Object Name,Count | ForEach-Object {[pscustomobject]@{Name = 'TrustType'; Property = $_.Name; Value = $_.Count}}
 		$stats += $aadevs | Group-Object -Property OSVersion | Select-Object Name,Count | ForEach-Object {$_.Name -ne '' -and $_.Count -gt 5} | Sort-Object Count -Descending | ForEach-Object {[pscustomobject]@{Name = 'OSVersion'; Property = $_.Name; Value = $_.Count}}
 		$stats += $aadevs | Group-Object -Property LastLogonDays | ForEach-Object {$_.Name -gt 180 -and $_.Count -gt 10} | ForEach-Object {[pscustomobject]@{Name = 'DaysSinceLogon'; Count = $_.Count; Property = [int]$_.Name}} | Sort-Object Property -Descending
+		$iMissing = $aadevs | Where-Object {$_.Name -notin $intdevs.DeviceName}
+		$aMissing = $intdevs | Where-Object {$_.DeviceName -notin $aadevs.Name}
 	}
 
 	Write-Host "Exporting datasets: Summary"
@@ -816,7 +818,12 @@ function Write-psIntuneDeviceReport {
 	$appcounts | Export-Excel -Path $xlFile -WorksheetName "IntuneInstallCounts" -ClearSheet -AutoSize -AutoFilter -FreezeTopRow
 	Write-Host "Exporting datasets: Intune Software Unique Instances"
 	$distapps | Export-Excel -Path $xlFile -WorksheetName "IntuneSoftwareUnique" -ClearSheet -AutoSize -AutoFilter -FreezeTopRow
-
+	if ($AzureAD) {
+		Write-Host "Exporting datasets: Devices missing from Intune"
+		$iMissing | Export-Excel -Path $xlFile -WorksheetName "IntuneMissing" -ClearSheet -AutoSize -AutoFilter -FreezeTopRowFirstColumn
+		Write-Host "Exporting datasets: Devices missing from Azure AD"
+		$aMissing | Export-Excel -Path $xlFile -WorksheetName "AADMissing" -ClearSheet -AutoSize -AutoFilter -FreezeTopRowFirstColumn
+	}
 	if ($Show) { Start-Process -FilePath "$xlFile" }
 	Write-Host "Export saved to $xlFile" -ForegroundColor Green
 
