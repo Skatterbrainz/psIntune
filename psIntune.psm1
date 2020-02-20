@@ -333,41 +333,54 @@ function Get-psIntuneAzureADDevices {
 	#>
 	[CmdletBinding()]
 	param()
-	if (!$AADCred) { $Global:AADCred = Connect-AzureAD }
-	Write-Verbose "requesting devices from Azure AD tenant"
-	$aadcomps = Get-AzureADDevice -All $True
-	Write-Verbose "returned $($aadcomps.Count) devices from Azure AD"
-	$aadcomps | Foreach-Object {
-		$llogin = $_.ApproximateLastLogonTimeStamp
-		if (![string]::IsNullOrEmpty($llogin)) {
-			$xdaysOld = (New-TimeSpan -Start $([datetime]$llogin) -End (Get-Date)).Days
+	try {
+		if (!$AADCred) { 
+			Write-Host "Connecting to AzureAD, you may be required to confirm MFA" -ForegroundColor Yellow
+			$Global:AADCred = Connect-AzureAD 
 		}
-		else {
-			$xdaysOld = $null
+		if (!$AADCred) {
+			throw "AzureAD authentication was not completed"
 		}
-		if (![string]::IsNullOrEmpty($_.LastDirSyncTime)) {
-			$xSyncDays = (New-TimeSpan -Start $([datetime]$_.LastDirSyncTime) -End (Get-Date)).Days
+		Write-Host "Requesting devices from Azure AD tenant" -ForegroundColor Cyan
+		$aadcomps = Get-AzureADDevice -All $True
+		Write-Host "Returned $($aadcomps.Count) devices from Azure AD" -ForegroundColor Cyan
+		$aadcomps | Foreach-Object {
+			$devname = $_.DisplayName
+			Write-Verbose "reading properties for: $devname"
+			$llogin = $_.ApproximateLastLogonTimeStamp
+			if (![string]::IsNullOrEmpty($llogin)) {
+				$xdaysOld = (New-TimeSpan -Start $([datetime]$llogin) -End (Get-Date)).Days
+			}
+			else {
+				$xdaysOld = $null
+			}
+			if (![string]::IsNullOrEmpty($_.LastDirSyncTime)) {
+				$xSyncDays = (New-TimeSpan -Start $([datetime]$_.LastDirSyncTime) -End (Get-Date)).Days
+			}
+			else {
+				$xSyncDays = $null
+			}
+			[pscustomobject]@{
+				Name           = $devname
+				DeviceId       = $_.DeviceId
+				ObjectId       = $_.ObjectId
+				Enabled        = $_.AccountEnabled
+				OSName         = $_.DeviceOSType
+				OSVersion      = $_.DeviceOSVersion
+				TrustType      = $_.DeviceTrustType
+				LastLogon      = $_.ApproximateLastLogonTimeStamp
+				LastLogonDays  = $xdaysOld
+				IsCompliant    = $($_.IsCompliant -eq $True)
+				IsManaged      = $($_.IsManaged -eq $True)
+				DirSyncEnabled = $($_.DirSyncEnabled -eq $True)
+				LastDirSync    = $_.LastDirSyncTime
+				LastSyncDays   = $xSyncDays
+				ProfileType    = $_.ProfileType
+			}
 		}
-		else {
-			$xSyncDays = $null
-		}
-		[pscustomobject]@{
-			Name           = $_.DisplayName
-			DeviceId       = $_.DeviceId
-			ObjectId       = $_.ObjectId
-			Enabled        = $_.AccountEnabled
-			OSName         = $_.DeviceOSType
-			OSVersion      = $_.DeviceOSVersion
-			TrustType      = $_.DeviceTrustType
-			LastLogon      = $_.ApproximateLastLogonTimeStamp
-			LastLogonDays  = $xdaysOld
-			IsCompliant    = $($_.IsCompliant -eq $True)
-			IsManaged      = $($_.IsManaged -eq $True)
-			DirSyncEnabled = $($_.DirSyncEnabled -eq $True)
-			LastDirSync    = $_.LastDirSyncTime
-			LastSyncDays   = $xSyncDays
-			ProfileType    = $_.ProfileType
-		}
+	}
+	catch {
+		Write-Error $_.Exception.Message
 	}
 }
 
@@ -696,6 +709,8 @@ function Write-psIntuneDeviceReport {
 	.PARAMETER LowDiskGB
 		Free disk space GB to indicate "low disk space".
 		Default is 20
+	.PARAMETER AzureAD
+		Includes AzureAD device accounts with report
 	.PARAMETER Overwrite
 		If output file exists, with same name, it will be overwritten.
 		Default is to abort if idential filename exists.
@@ -710,6 +725,7 @@ function Write-psIntuneDeviceReport {
 		[parameter()][string][ValidateSet('All','Windows','Android','iOS')] $DeviceOS = 'All',
 		[parameter()][ValidateRange(1,1000)][int] $StaleLimit = 180,
 		[parameter()][ValidateRange(0,100)][int] $LowDiskGB = 20,
+		[parameter()][switch] $AzureAD,
 		[parameter()][switch] $Overwrite,
 		[parameter()][switch] $Show
 	)
@@ -753,120 +769,60 @@ function Write-psIntuneDeviceReport {
 	$appcounts = $apps | Group-Object -Property ProductName | Select-Object Count,Name | Sort-Object Name -Unique
 	Write-Host "Applying filter rule: Distinct Software Installs"
 	$distapps  = $apps | Select-Object ProductName,ProductType,DeviceName | Sort-Object ProductName -Unique
-	#$aadevs  = Get-psIntuneAzureADDevices
-	#Write-Host "Found $($aadevs.Count) AzureAD device accounts"
-	#if ($DeviceOS -ne 'All') {
-	#	Write-Host "Filtering AzureAD devices by OSName: $DeviceOS"
-	#	$aadevs = $aadevs | Where-Object {$_.OSName -match $DeviceOS}
-	#	Write-Host "Returned $($aadevs.Count) AzureAD devices running $DeviceOS"
-	#}
+	if ($AzureAD) {
+		$aadevs = Get-psIntuneAzureADDevices
+		if ($DeviceOS -ne 'All') {
+			$aadevs = $aadevs | Where-Object { $_.OSName -match $DeviceOS }
+			Write-Verbose "returned $($aadevs.Count) AzureAD devices running $DeviceOS"
+		}
+	}
 
 	Write-Host "Crunching statistics and stuff..."
 	$stats = @()
-	$stats += $intdevs | Group-Object -Property OSName,OSVersion | Sort-Object Count -Descending | Select-Object Name,Count | %{[pscustomobject]@{Name = 'OperatingSystem'; Property = $_.Name; Value = $_.Count}}
-	$stats += $intdevs | Group-Object -Property Manufacturer,Model | Select-Object Name,Count | Sort-Object Count -Descending | %{[pscustomobject]@{Name = 'Models'; Property = $_.Name; Value = $_.Count}}
-	$stats += $intdevs | Group-Object -Property Ownership | Select-Object Name,Count | Sort-Object Count -Descending | %{[pscustomobject]@{Name = 'Ownership'; Property = $_.Name; Value = $_.Count}}
-	$stats += $intdevs | Group-Object -Property Category | Select-Object Name,Count | Sort-Object Count -Descending | %{[pscustomobject]@{Name = 'Category'; Property = $_.Name; Value = $_.Count}}
-	$stats += $intdevs | Group-Object -Property UserName | Select-Object Name,Count | Where-Object {$_.Count -gt 1 -and $_.Name -ne ''} | Sort-Object Count -Descending | Select-Object -First 25 | %{[pscustomobject]@{Name = 'UserName'; Property = $_.Name; Value = $_.Count}}
-	#$stats += $aadevs | Group-Object -Property IsCompliant | Select-Object Name,Count | % {[pscustomobject]@{Name = 'Compliant'; Property = $_.Name; Value = $_.Count}}
-	#$stats += $aadevs | Group-Object -Property DirSyncEnabled | Select-Object Name,Count | % {[pscustomobject]@{Name = 'DirSyncEnabled'; Property = $_.Name; Value = $_.Count}}
-	#$stats += $aadevs | Group-Object -Property TrustType | Select-Object Name,Count | % {[pscustomobject]@{Name = 'TrustType'; Property = $_.Name; Value = $_.Count}}
-	#$stats += $aadevs | Group-Object -Property OSVersion | Select-Object Name,Count | ?{$_.Name -ne '' -and $_.Count -gt 5} | Sort-Object Count -Descending | % {[pscustomobject]@{Name = 'OSVersion'; Property = $_.Name; Value = $_.Count}}
-	#$stats += $aadevs | Group-Object -Property LastLogonDays | ?{$_.Name -gt 180 -and $_.Count -gt 10} | %{[pscustomobject]@{Name = 'DaysSinceLogon'; Count = $_.Count; Property = [int]$_.Name}} | Sort-Object Property -Descending
+	$stats += $intdevs | Group-Object -Property OSName,OSVersion | Sort-Object Count -Descending | Select-Object Name,Count | ForEach-Object {[pscustomobject]@{Name = 'OperatingSystem'; Property = $_.Name; Value = $_.Count}}
+	$stats += $intdevs | Group-Object -Property Manufacturer,Model | Select-Object Name,Count | Sort-Object Count -Descending | ForEach-Object {[pscustomobject]@{Name = 'Models'; Property = $_.Name; Value = $_.Count}}
+	$stats += $intdevs | Group-Object -Property Ownership | Select-Object Name,Count | Sort-Object Count -Descending | ForEach-Object {[pscustomobject]@{Name = 'Ownership'; Property = $_.Name; Value = $_.Count}}
+	$stats += $intdevs | Group-Object -Property Category | Select-Object Name,Count | Sort-Object Count -Descending | ForEach-Object {[pscustomobject]@{Name = 'Category'; Property = $_.Name; Value = $_.Count}}
+	$stats += $intdevs | Group-Object -Property UserName | Select-Object Name,Count | Where-Object {$_.Count -gt 1 -and $_.Name -ne ''} | Sort-Object Count -Descending | Select-Object -First 25 | ForEach-Object {[pscustomobject]@{Name = 'UserName'; Property = $_.Name; Value = $_.Count}}
+	if ($AzureAD) {
+		$stats += $aadevs | Group-Object -Property IsCompliant | Select-Object Name,Count | ForEach-Object {[pscustomobject]@{Name = 'Compliant'; Property = $_.Name; Value = $_.Count}}
+		$stats += $aadevs | Group-Object -Property DirSyncEnabled | Select-Object Name,Count | ForEach-Object {[pscustomobject]@{Name = 'DirSyncEnabled'; Property = $_.Name; Value = $_.Count}}
+		$stats += $aadevs | Group-Object -Property TrustType | Select-Object Name,Count | ForEach-Object {[pscustomobject]@{Name = 'TrustType'; Property = $_.Name; Value = $_.Count}}
+		$stats += $aadevs | Group-Object -Property OSVersion | Select-Object Name,Count | ForEach-Object {$_.Name -ne '' -and $_.Count -gt 5} | Sort-Object Count -Descending | ForEach-Object {[pscustomobject]@{Name = 'OSVersion'; Property = $_.Name; Value = $_.Count}}
+		$stats += $aadevs | Group-Object -Property LastLogonDays | ForEach-Object {$_.Name -gt 180 -and $_.Count -gt 10} | ForEach-Object {[pscustomobject]@{Name = 'DaysSinceLogon'; Count = $_.Count; Property = [int]$_.Name}} | Sort-Object Property -Descending
+	}
 
 	Write-Host "Exporting datasets: Summary"
 	$stats | Export-Excel -Path $xlFile -WorksheetName "Summary" -ClearSheet -AutoSize -AutoFilter -FreezeTopRow
-	Write-Host "Exporting datasets: Devices"
-	$intdevs | Export-Excel -Path $xlFile -WorksheetName "Devices" -ClearSheet -AutoSize -AutoFilter -FreezeTopRowFirstColumn
-	Write-Host "Exporting datasets: Models"
-	$models | Export-Excel -Path $xlFile -WorksheetName "Models" -ClearSheet -AutoSize -AutoFilter -FreezeTopRow
-	Write-Host "Exporting datasets: Stale Devices"
-	$staledevs | Export-Excel -Path $xlFile -WorksheetName "StaleDevices" -ClearSheet -AutoSize -AutoFilter -FreezeTopRowFirstColumn
-	Write-Host "Exporting datasets: Duplicate Devices"
-	$dupedevs | Export-Excel -Path $xlFile -WorksheetName "Duplicates" -ClearSheet -AutoSize -AutoFilter -FreezeTopRow
-	Write-Host "Exporting datasets: Orphaned Devices"
-	$deldevs | Export-Excel -Path $xlFile -WorksheetName "Orphaned" -ClearSheet -AutoSize -AutoFilter -FreezeTopRowFirstColumn
-	Write-Host "Exporting datasets: Devices with Low Disk Space"
-	$lowdisk | Export-Excel -Path $xlFile -WorksheetName "LowDisk" -ClearSheet -AutoSize -AutoFilter -FreezeTopRowFirstColumn
-	Write-Host "Exporting datasets: Software"
-	$apps | Export-Excel -Path $xlFile -WorksheetName "Software" -ClearSheet -AutoSize -AutoFilter -FreezeTopRowFirstColumn
-	Write-Host "Exporting datasets: Software Install Counts"
-	$appcounts | Export-Excel -Path $xlFile -WorksheetName "InstallCounts" -ClearSheet -AutoSize -AutoFilter -FreezeTopRow
-	Write-Host "Exporting datasets: Software Unique Instances"
-	$distapps | Export-Excel -Path $xlFile -WorksheetName "SoftwareUnique" -ClearSheet -AutoSize -AutoFilter -FreezeTopRow
+	Write-Host "Exporting datasets: Intune Devices"
+	$intdevs | Export-Excel -Path $xlFile -WorksheetName "IntuneDevices" -ClearSheet -AutoSize -AutoFilter -FreezeTopRowFirstColumn
+	if ($AzureAD) {
+		Write-Host "Exporting datasets: AzureAD devices"
+		$aadevs | Export-Excel -Path $xlFile -WorksheetName "AzureADDevices" -ClearSheet -AutoSize -AutoFilter -FreezeTopRowFirstColumn
+	}
+	Write-Host "Exporting datasets: Intune Device Models"
+	$models | Export-Excel -Path $xlFile -WorksheetName "IntuneModels" -ClearSheet -AutoSize -AutoFilter -FreezeTopRow
+	Write-Host "Exporting datasets: Intune Stale Devices"
+	$staledevs | Export-Excel -Path $xlFile -WorksheetName "IntuneStaleDevices" -ClearSheet -AutoSize -AutoFilter -FreezeTopRowFirstColumn
+	Write-Host "Exporting datasets: Intune Duplicate Devices"
+	$dupedevs | Export-Excel -Path $xlFile -WorksheetName "IntuneDuplicates" -ClearSheet -AutoSize -AutoFilter -FreezeTopRow
+	Write-Host "Exporting datasets: Intune Orphaned Devices"
+	$deldevs | Export-Excel -Path $xlFile -WorksheetName "IntuneOrphaned" -ClearSheet -AutoSize -AutoFilter -FreezeTopRowFirstColumn
+	Write-Host "Exporting datasets: Intune Devices with Low Disk Space"
+	$lowdisk | Export-Excel -Path $xlFile -WorksheetName "IntuneLowDisk" -ClearSheet -AutoSize -AutoFilter -FreezeTopRowFirstColumn
+	Write-Host "Exporting datasets: Intune Installed Software"
+	$apps | Export-Excel -Path $xlFile -WorksheetName "IntuneSoftware" -ClearSheet -AutoSize -AutoFilter -FreezeTopRowFirstColumn
+	Write-Host "Exporting datasets: Intune Software Install Counts"
+	$appcounts | Export-Excel -Path $xlFile -WorksheetName "IntuneInstallCounts" -ClearSheet -AutoSize -AutoFilter -FreezeTopRow
+	Write-Host "Exporting datasets: Intune Software Unique Instances"
+	$distapps | Export-Excel -Path $xlFile -WorksheetName "IntuneSoftwareUnique" -ClearSheet -AutoSize -AutoFilter -FreezeTopRow
 
 	if ($Show) { Start-Process -FilePath "$xlFile" }
 	Write-Host "Export saved to $xlFile" -ForegroundColor Green
+
 	$time2 = Get-Date
 	$rt = New-TimeSpan -Start $time1 -End $time2
 	Write-Host "Total runtime: $($rt.Hours)`:$($rt.Minutes)`:$($rt.Seconds) (hh`:mm`:ss)" -ForegroundColor Cyan
-}
-
-function Invoke-psIntuneExcelQuery {
-	<#
-	.SYNOPSIS
-		Query Excel Workbook/WorkSheet using SQL statement
-
-	.DESCRIPTION
-		Same as above
-
-	.PARAMETER FilePath
-		Path and filename to .xlsx workbook file
-
-	.PARAMETER Query
-		SQL query statement
-
-	.EXAMPLE
-		$xlFile = "c:\myfiles\IntuneDeviceData.xlsx"
-		$query = "select DeviceName,ProductName from [IntuneApps$] where ProductName='Crapware 2019'"
-		$rows = Invoke-psIntuneExcelQuery -FilePath $xlFile -Query $query
-
-	.NOTES
-		NAME: Invoke-psIntuneExcelQuery
-
-	.LINK
-		https://github.com/Skatterbrainz/ds-intune/blob/master/docs/Invoke-psIntuneExcelQuery.md
-	#>
-	[CmdletBinding()]
-	param (
-		[parameter(Mandatory)][ValidateNotNullOrEmpty()][string] $FilePath,
-		[parameter(Mandatory)][ValidateNotNullOrEmpty()][string] $Query
-	)
-	if (-not(Test-Path $FilePath)) {
-		Write-Warning "file not found: $FilePath"
-		break
-	}
-	try {
-		$conn = New-Object System.Data.OleDb.OleDbConnection
-		$cmd  = New-Object System.Data.OleDb.OleDbCommand
-
-		$connstr = "Provider=Microsoft.ACE.OLEDB.12.0;Data Source=$FilePath;Extended Properties='Excel 12.0 Xml;HDR=YES;'"
-		$conn.ConnectionString = $connstr
-
-		$conn.Open()
-		#$conn.GetSchema("tables")
-		$cmd.CommandText = $query
-		$cmd.CommandType = "Text"
-		$cmd.Connection = $conn
-
-		$dataReader = $cmd.ExecuteReader()
-		$result = @()
-		while ($dataReader.Read()) {
-			$columns = $($dataReader.GetSchemaTable()).ColumnName
-			$row = New-Object PSObject
-			foreach ($column in $columns) {
-				$row | Add-Member -MemberType NoteProperty -Name $column -Value $dataReader.item($column)
-			}
-			$result += $row
-		}
-	}
-	catch {
-		Write-Error $_.Exception.Message
-	}
-	finally {
-		$conn.Close()
-		$result
-	}
 }
 
 function Invoke-psIntuneAppQuery {
