@@ -1,11 +1,11 @@
 ---
 external help file: psIntune-help.xml
 Module Name: psIntune
-online version: https://github.com/Skatterbrainz/ds-intune/blob/master/docs/Export-psIntuneInventory.md
+online version:
 schema: 2.0.0
 ---
 
-# Get-psIntuneAuth
+# get-psIntuneAuth
 
 ## SYNOPSIS
 Returns authentication token object
@@ -13,7 +13,7 @@ Returns authentication token object
 ## SYNTAX
 
 ```
-Get-psIntuneAuth [-UserName] <String> [<CommonParameters>]
+get-psIntuneAuth [-UserName] <String> [<CommonParameters>]
 ```
 
 ## DESCRIPTION
