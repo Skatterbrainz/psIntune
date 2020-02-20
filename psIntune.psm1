@@ -447,7 +447,7 @@ function Get-psIntuneDevice {
 		}
 		foreach ($Device in $Devices){
 			if ($ShowProgress) { 
-				Write-Progress -Activity "Found $dcount" -Status "$dx of $dcount" -PercentComplete $(($dx/$dcount)*100) -id 1
+				Write-Progress -Activity "Found $dcount devices" -Status "Reading device $dx of $dcount" -PercentComplete $(($dx/$dcount)*100) -id 1
 			}
 			$DeviceID = $Device.id
 			$LastSync = $Device.lastSyncDateTime
