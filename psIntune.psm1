@@ -237,6 +237,7 @@ function Get-ManagedDevices(){
 			Write-Warning "EAS Devices are excluded by default, please use -IncludeEAS if you want to include those devices"
 			#Write-Host
 		}
+		
 		$response = (Invoke-RestMethod -Uri $uri -Headers $authToken -Method Get)
 		$Devices = $response.Value
 		$DevicesNextLink = $response."@odata.nextLink"
@@ -441,13 +442,13 @@ function Get-psIntuneDevice {
 		}
 		$dcount = $Devices.Count
 		$dx = 1
-		Write-Verbose "returned $dcount devices"
+		Write-Verbose "returned $dcount Intune managed devices"
 		if ($Detail -eq 'Full') {
 			Write-Warning "Full option takes the longest to process. This may take a few minutes."
 		}
 		foreach ($Device in $Devices){
 			if ($ShowProgress) { 
-				Write-Progress -Activity "Found $dcount devices" -Status "Reading device $dx of $dcount" -PercentComplete $(($dx/$dcount)*100) -id 1
+				Write-Progress -Activity "Found $dcount Intune managed devices" -Status "Reading device $dx of $dcount" -PercentComplete $(($dx/$dcount)*100) -id 1
 			}
 			$DeviceID = $Device.id
 			$LastSync = $Device.lastSyncDateTime
@@ -493,6 +494,7 @@ function Get-psIntuneDevice {
 					}	
 				}
 				'Full' {
+					#Start-Sleep -Seconds 1
 					$uriApps = "https://graph.microsoft.com/$graphApiVersion/deviceManagement/manageddevices('$DeviceID')?`$expand=detectedApps"
 					$DetectedApps = (Invoke-RestMethod -Uri $uriApps -Headers $authToken -Method Get).detectedApps
 					$compliant = $($Device.complianceState -eq $True)
@@ -531,7 +533,43 @@ function Get-psIntuneDevice {
 		} # foreach
 	}
 	catch {
+		Write-Warning "Queried $dx of $dcount Intune devices before encountering an error"
 		Write-Error $_.Exception.Message 
+	}
+}
+
+function Get-psIntuneDeviceApps {
+	[CmdletBinding()]
+	param (
+		[parameter(Mandatory)][ValidateNotNullOrEmpty()] $Devices,
+		[parameter(Mandatory)][ValidateNotNullOrEmpty()][string] $UserName,
+		[parameter()][switch] $ShowProgress,
+		[parameter()][string] $graphApiVersion = "beta"
+	)
+	Get-psIntuneAuth -UserName $UserName
+	$dcount = $Devices.Count
+	$dx = 1
+	$Devices | ForEach-Object {
+		$DeviceID = $_.DeviceID
+		$Name = $_.DeviceName
+		if ($ShowProgress) { 
+			Write-Progress -Activity "Querying $dcount Intune managed devices" -Status "Reading device $dx of $dcount" -PercentComplete $(($dx/$dcount)*100) -id 1
+		}
+		try {
+			$uriApps = "https://graph.microsoft.com/$graphApiVersion/deviceManagement/manageddevices('$DeviceID')?`$expand=detectedApps"
+			$DetectedApps = @(Invoke-RestMethod -Uri $uriApps -Headers $authToken -Method Get -ErrorAction SilentlyContinue | Select-Object detectedApps)
+		}
+		catch {
+			Write-Warning "Failed to read device ($dx of $dcount) ID`=$DeviceID NAME`=$Name ERROR`=$($_.Exception.Message -join ';')"
+		}
+		finally {
+			[pscustomobject]@{
+				DeviceName = $Name
+				DeviceID   = $DeviceID
+				Apps       = $DetectedApps
+			}
+		}
+		$dx++
 	}
 }
 
@@ -716,6 +754,8 @@ function Write-psIntuneDeviceReport {
 		Default is to abort if idential filename exists.
 	.PARAMETER Show
 		Display workbook when export is complete. Default is to not show
+	.PARAMETER NoDateStamp
+		Do not include datestamp in the output filename (default is "_YYYY-MM-DD" suffix)
 	#>
 	[CmdletBinding()]
 	param (
@@ -727,11 +767,21 @@ function Write-psIntuneDeviceReport {
 		[parameter()][ValidateRange(0,100)][int] $LowDiskGB = 20,
 		[parameter()][switch] $AzureAD,
 		[parameter()][switch] $Overwrite,
-		[parameter()][switch] $Show
+		[parameter()][switch] $Show,
+		[parameter()][switch] $NoDateStamp
 	)
 	$time1 = Get-Date
 	Write-Host "Gathering data to generate report"
-	$xlFile = "$OutputFolder\IntuneDevices`_$Title`_$(Get-Date -f 'yyyy-MM-dd').xlsx"
+	if ($AzureAD) {
+		$aadevs = Get-psIntuneAzureADDevices
+	}
+	if ($NoDateStamp) {
+		$xlFile = "$OutputFolder\IntuneDevices`_$Title.xlsx"
+	}
+	else {
+		$xlFile = "$OutputFolder\IntuneDevices`_$Title`_$(Get-Date -f 'yyyy-MM-dd').xlsx"
+	}
+	
 	Write-Verbose "output file = $xlFile"
 	if ((Test-Path $xlFile) -and (!$Overwrite)) {
 		Write-Warning "Output file exists [$xlFile]. Use -Overwrite to replace."
@@ -758,7 +808,7 @@ function Write-psIntuneDeviceReport {
 	Write-Host "Applying filter rule: Orphaned Devices"
 	$deldevs   = $devs | Where-Object {$_.DeviceName -eq 'User deleted for this device'} | Select-Object * -ExcludeProperty Apps
 	Write-Host "Applying filter rule: Duplicate Devices"
-	$dupedevs  = $devs | Select-Object DeviceName,DeviceID | Group-Object -Property DeviceName | Select-Object Count,Name
+	$dupedevs  = $devs | Select-Object DeviceName,DeviceID | Group-Object -Property DeviceName | Where-Object {$_.Count -gt 1} | Select-Object Count,Name
 	Write-Host "Applying filter rule: Stale Devices"
 	$staledevs = $devs | Where-Object {$_.LastSyncDays -ge $StaleLimit} | Select-Object DeviceName,DeviceID,Category,Ownership,Manufacturer,Model,UserName,SerialNumber,LastSyncTime,LastSyncDays,EnrollDate
 	Write-Host "Applying filter rule: Devices with Low Disk Space"
@@ -770,11 +820,12 @@ function Write-psIntuneDeviceReport {
 	Write-Host "Applying filter rule: Distinct Software Installs"
 	$distapps  = $apps | Select-Object ProductName,ProductType,DeviceName | Sort-Object ProductName -Unique
 	if ($AzureAD) {
-		$aadevs = Get-psIntuneAzureADDevices
 		if ($DeviceOS -ne 'All') {
 			$aadevs = $aadevs | Where-Object { $_.OSName -match $DeviceOS }
 			Write-Verbose "returned $($aadevs.Count) AzureAD devices running $DeviceOS"
 		}
+		$aadx = $aadevs | Select-Object Name,OSName,OSVersion | Sort-Object Name -Unique
+		$aadupes = $aadevs | Group-Object Name | Where-Object {$_.Count -gt 1} | Select-Object Count,Name
 	}
 
 	Write-Host "Crunching statistics and stuff..."
@@ -800,7 +851,9 @@ function Write-psIntuneDeviceReport {
 	$intdevs | Export-Excel -Path $xlFile -WorksheetName "IntuneDevices" -ClearSheet -AutoSize -AutoFilter -FreezeTopRowFirstColumn
 	if ($AzureAD) {
 		Write-Host "Exporting datasets: AzureAD devices"
-		$aadevs | Export-Excel -Path $xlFile -WorksheetName "AzureADDevices" -ClearSheet -AutoSize -AutoFilter -FreezeTopRowFirstColumn
+		$aadevs | Export-Excel -Path $xlFile -WorksheetName "AaDevices" -ClearSheet -AutoSize -AutoFilter -FreezeTopRowFirstColumn
+		$aadx | Export-Excel -Path $xlFile -WorksheetName "AaDevicesUnique" -ClearSheet -AutoSize -AutoFilter -FreezeTopRow
+		$aadupes | Export-Excel -Path $xlFile -WorksheetName "AaDevicesDuplicates" -ClearSheet -AutoSize -AutoFilter -FreezeTopRowFirstColumn
 	}
 	Write-Host "Exporting datasets: Intune Device Models"
 	$models | Export-Excel -Path $xlFile -WorksheetName "IntuneModels" -ClearSheet -AutoSize -AutoFilter -FreezeTopRow
