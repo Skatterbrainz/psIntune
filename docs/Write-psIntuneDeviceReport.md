@@ -13,9 +13,9 @@ Export Inventory Data to Excel Workbook
 ## SYNTAX
 
 ```
-Write-psIntuneDeviceReport [[-DataSet] <Object>] [[-OutputFolder] <String>] [[-Title] <String>]
- [[-DeviceOS] <String>] [[-StaleLimit] <Int32>] [[-LowDiskGB] <Int32>] [-AzureAD] [-Overwrite] [-Show]
- [<CommonParameters>]
+Write-psIntuneDeviceReport [[-Devices] <Object>] [[-Apps] <Object>] [[-OutputFolder] <String>]
+ [[-Title] <String>] [[-DeviceOS] <String>] [[-StaleLimit] <Int32>] [[-LowDiskGB] <Int32>] [-AzureAD]
+ [-Overwrite] [-Show] [-NoDateStamp] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -32,9 +32,8 @@ PS C:\> {{ Add example code here }}
 
 ## PARAMETERS
 
-### -DataSet
-Device Data queried from Intune using Get-psIntuneDevice -Detail Full
-If DataSet is not provided, data will be queried from Intune.
+### -Devices
+{{ Fill Devices Description }}
 
 ```yaml
 Type: Object
@@ -43,6 +42,21 @@ Aliases:
 
 Required: False
 Position: 1
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -Apps
+{{ Fill Apps Description }}
+
+```yaml
+Type: Object
+Parameter Sets: (All)
+Aliases:
+
+Required: False
+Position: 2
 Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -58,7 +72,7 @@ Parameter Sets: (All)
 Aliases:
 
 Required: False
-Position: 2
+Position: 3
 Default value: "$($env:USERPROFILE)\Documents"
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -73,7 +87,7 @@ Parameter Sets: (All)
 Aliases:
 
 Required: False
-Position: 3
+Position: 4
 Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -90,7 +104,7 @@ Parameter Sets: (All)
 Aliases:
 
 Required: False
-Position: 4
+Position: 5
 Default value: All
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -106,7 +120,7 @@ Parameter Sets: (All)
 Aliases:
 
 Required: False
-Position: 5
+Position: 6
 Default value: 180
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -122,7 +136,7 @@ Parameter Sets: (All)
 Aliases:
 
 Required: False
-Position: 6
+Position: 7
 Default value: 20
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -162,6 +176,21 @@ Accept wildcard characters: False
 ### -Show
 Display workbook when export is complete.
 Default is to not show
+
+```yaml
+Type: SwitchParameter
+Parameter Sets: (All)
+Aliases:
+
+Required: False
+Position: Named
+Default value: False
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -NoDateStamp
+Do not include datestamp in the output filename (default is "_YYYY-MM-DD" suffix)
 
 ```yaml
 Type: SwitchParameter

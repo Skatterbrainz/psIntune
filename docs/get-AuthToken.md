@@ -1,38 +1,40 @@
 ---
 external help file: psIntune-help.xml
 Module Name: psIntune
-online version: https://github.com/Skatterbrainz/ds-intune/blob/master/docs/Get-ManagedDevices.md
+online version:
 schema: 2.0.0
 ---
 
-# get-psIntuneAuth
+# get-AuthToken
 
 ## SYNOPSIS
-Returns authentication token object
+This function is used to authenticate with the Graph API REST interface
 
 ## SYNTAX
 
 ```
-get-psIntuneAuth [-UserName] <String> [<CommonParameters>]
+get-AuthToken [-User] <Object> [<CommonParameters>]
 ```
 
 ## DESCRIPTION
-{{ Fill in the Description }}
+The function authenticate with the Graph API Interface with the tenant name
 
 ## EXAMPLES
 
 ### EXAMPLE 1
 ```
-Get-psIntuneAuth -UserName "john.doe@contoso.com"
+Get-AuthToken -User "john.doe@contoso.com"
 ```
+
+Authenticates user with the Graph API interface
 
 ## PARAMETERS
 
-### -UserName
+### -User
 UserName for cloud services access
 
 ```yaml
-Type: String
+Type: Object
 Parameter Sets: (All)
 Aliases:
 
@@ -51,6 +53,6 @@ This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable
 ## OUTPUTS
 
 ## NOTES
-Name: Get-psIntuneAuth
+NAME: Get-AuthToken
 
 ## RELATED LINKS
