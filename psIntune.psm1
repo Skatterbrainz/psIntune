@@ -68,6 +68,7 @@ function get-AuthToken {
 		$adalforms = Join-Path $AadModule.ModuleBase "Microsoft.IdentityModel.Clients.ActiveDirectory.Platform.dll"
 	}
 
+	Write-Verbose "preparing authentication request session"
 	[System.Reflection.Assembly]::LoadFrom($adal) | Out-Null
 	[System.Reflection.Assembly]::LoadFrom($adalforms) | Out-Null
 
@@ -75,13 +76,19 @@ function get-AuthToken {
 	$redirectUri = "urn:ietf:wg:oauth:2.0:oob"
 	$resourceAppIdURI = "https://graph.microsoft.com"
 	$authority = "https://login.microsoftonline.com/$Tenant"
-
+	
 	try {
+		Write-Verbose "connecting to $authority"
 		$authContext = New-Object "Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContext" -ArgumentList $authority
 		# https://msdn.microsoft.com/en-us/library/azure/microsoft.identitymodel.clients.activedirectory.promptbehavior.aspx
 		# Change the prompt behaviour to force credentials each time: Auto, Always, Never, RefreshSession
 		$platformParameters = New-Object "Microsoft.IdentityModel.Clients.ActiveDirectory.PlatformParameters" -ArgumentList "Auto"
 		$userId = New-Object "Microsoft.IdentityModel.Clients.ActiveDirectory.UserIdentifier" -ArgumentList ($User, "OptionalDisplayableId")
+		Write-Verbose "1. $resourceAppIdURI"
+		Write-Verbose "2. $clientId"
+		Write-Verbose "3. $redirectUri" 
+		Write-Verbose "4. $platformParameters"
+		Write-Verbose "5. $userId"
 		$authResult = $authContext.AcquireTokenAsync($resourceAppIdURI,$clientId,$redirectUri,$platformParameters,$userId).Result
 
 		# If the accesstoken is valid then create the authentication header
@@ -539,6 +546,30 @@ function Get-psIntuneDevice {
 }
 
 function Get-psIntuneDeviceApps {
+	<#
+	.SYNOPSIS
+		Queries Installed Apps on Intune devices
+	.DESCRIPTION
+		Queries Installed Apps on Intune managed devices
+	.PARAMETER Devices
+		Data returned from Get-psIntuneDevice
+	.PARAMETER UserName
+		UserPrincipalName for authentication request
+	.PARAMETER ShowProgress
+		Display progress as data is exported (default is silent / no progress shown)
+	.PARAMETER graphApiVersion
+		Graph API version. Default is "beta"
+	.EXAMPLE
+		$devices = Get-psIntuneDevice -UserName $userid -Detail Detailed -ShowProgress
+		$apps = Get-psIntuneDeviceApps -Devices $devices -UserName $userid -ShowProgress
+
+		Gathers all Intune managed devices without their installed apps, then passes
+		the $devices array to query the installed applications per device.
+	.NOTES
+		NAME: Get-psIntuneDeviceApps
+	.LINK
+		https://github.com/Skatterbrainz/ds-intune/blob/master/docs/Get-psIntuneDeviceApps.md
+	#>
 	[CmdletBinding()]
 	param (
 		[parameter(Mandatory)][ValidateNotNullOrEmpty()] $Devices,
@@ -552,12 +583,16 @@ function Get-psIntuneDeviceApps {
 	$Devices | ForEach-Object {
 		$DeviceID = $_.DeviceID
 		$Name = $_.DeviceName
+		Write-Verbose "device name=$Name id=$DeviceID"
+		#[System.Collections.Generic.List[PSObject]] $Apps = @()
 		if ($ShowProgress) { 
-			Write-Progress -Activity "Querying $dcount Intune managed devices" -Status "Reading device $dx of $dcount" -PercentComplete $(($dx/$dcount)*100) -id 1
+			Write-Progress -Activity "Querying $dcount Intune managed devices" -Status "Reading device $dx of $dcount : $Name" -PercentComplete $(($dx/$dcount)*100) -id 1
 		}
 		try {
 			$uriApps = "https://graph.microsoft.com/$graphApiVersion/deviceManagement/manageddevices('$DeviceID')?`$expand=detectedApps"
 			$DetectedApps = @(Invoke-RestMethod -Uri $uriApps -Headers $authToken -Method Get -ErrorAction SilentlyContinue | Select-Object detectedApps)
+			$apps = @($DetectedApps.detectedApps)
+			Write-Verbose "returned: $($apps.Count) apps"
 		}
 		catch {
 			Write-Warning "Failed to read device ($dx of $dcount) ID`=$DeviceID NAME`=$Name ERROR`=$($_.Exception.Message -join ';')"
@@ -566,7 +601,7 @@ function Get-psIntuneDeviceApps {
 			[pscustomobject]@{
 				DeviceName = $Name
 				DeviceID   = $DeviceID
-				Apps       = $DetectedApps
+				Apps       = $apps
 			}
 		}
 		$dx++
@@ -597,8 +632,7 @@ function Get-psIntuneInstalledApps {
 	#>
 	[CmdletBinding()]
 	param (
-		[parameter(Mandatory=$True)]
-		[ValidateNotNull()] $DataSet,
+		[parameter(Mandatory)][ValidateNotNull()] $DataSet,
 		[parameter()][switch] $GroupByName
 	)
 	$badnames = ('. .','. . .','..','...')
@@ -731,9 +765,12 @@ function Write-psIntuneDeviceReport {
 		Export Inventory Data to Excel Workbook
 	.DESCRIPTION
 		Export Intune Device inventory data to Excel Workbook
-	.PARAMETER DataSet
+	.PARAMETER Devices
 		Device Data queried from Intune using Get-psIntuneDevice -Detail Full
-		If DataSet is not provided, data will be queried from Intune.
+		If not provided, data will be queried from Intune
+	.PARAMETER Apps
+		Apps data returned from Get-psIntuneDeviceApps
+		If not provided, data will be queried from Intune
 	.PARAMETER OutputFolder
 		Path for output file. Default is current user Documents path
 	.PARAMETER Title
@@ -759,7 +796,8 @@ function Write-psIntuneDeviceReport {
 	#>
 	[CmdletBinding()]
 	param (
-		[parameter()] $DataSet,
+		[parameter()] $Devices,
+		[parameter()] $Apps,
 		[parameter()][string] $OutputFolder = "$($env:USERPROFILE)\Documents",
 		[parameter()][string] $Title = "",
 		[parameter()][string][ValidateSet('All','Windows','Android','iOS')] $DeviceOS = 'All',
@@ -787,13 +825,19 @@ function Write-psIntuneDeviceReport {
 		Write-Warning "Output file exists [$xlFile]. Use -Overwrite to replace."
 		break
 	}
-	if ($null -eq $DataSet) {
+	if ($null -eq $Devices) {
 		Write-Host "Requesting new query results..."
-		$devs = Get-psIntuneDevice -Detail Full -ShowProgress
+		$devs = Get-psIntuneDevice -Detail Detailed -ShowProgress
 	}
 	else {
-		$devs = $DataSet
+		$devs = $Devices
 	}
+
+	if ($null -eq $Apps) {
+		Write-Host "Requesting application inventory for each device..."
+		$Apps = Get-psIntuneDeviceApps -Devices $devs -UserName $UserName -ShowProgress
+	}
+
 	Write-Host "Returned $($devs.Count) devices"
 	if ($DeviceOS -ne 'All') {
 		Write-Verbose "filtering devices on OSName = $DeviceOS"
@@ -814,7 +858,7 @@ function Write-psIntuneDeviceReport {
 	Write-Host "Applying filter rule: Devices with Low Disk Space"
 	$lowdisk   = $devs | Where-Object {$_.FreeSpaceGB -lt $LowDiskGB} | Select-Object * -ExcludeProperty Apps
 	Write-Host "Applying filter rule: Software"
-	$apps      = Get-psIntuneInstalledApps -DataSet $devs 
+	#$apps      = Get-psIntuneInstalledApps -DataSet $devs 
 	Write-Host "Applying filter rule: Software Install Counts"
 	$appcounts = $apps | Group-Object -Property ProductName | Select-Object Count,Name | Sort-Object Name -Unique
 	Write-Host "Applying filter rule: Distinct Software Installs"
