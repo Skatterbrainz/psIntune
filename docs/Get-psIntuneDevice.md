@@ -13,8 +13,8 @@ Returns dataset of Intune-managed devices with inventoried apps
 ## SYNTAX
 
 ```
-Get-psIntuneDevice [-UserName] <String> [[-DeviceName] <String>] [[-Detail] <String>] [-ShowProgress]
- [[-graphApiVersion] <String>] [<CommonParameters>]
+Get-psIntuneDevice [-UserName] <String> [[-DeviceName] <String>] [[-Detail] <String>] [[-DeviceOS] <String>]
+ [-ShowProgress] [[-graphApiVersion] <String>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -31,19 +31,26 @@ Returns detailed data for one device without installed applications
 
 ### EXAMPLE 2
 ```
+$devices = Get-psIntuneDevice -UserName "john.doe@contoso.com" -DeviceOS Windows -Detail Detailed
+```
+
+Returns detailed data for Windows devices without applications
+
+### EXAMPLE 3
+```
 $devices = Get-psIntuneDevice -UserName "john.doe@contoso.com"
 ```
 
 Returns summary data without applications
 
-### EXAMPLE 3
+### EXAMPLE 4
 ```
 $devices = Get-psIntuneDevice -UserName "john.doe@contoso.com" -ShowProgress
 ```
 
 Returns summary data without applications and shows progress during processing
 
-### EXAMPLE 4
+### EXAMPLE 5
 ```
 $devices = Get-psIntuneDevice -UserName "john.doe@contoso.com" -Detail -Full -ShowProgress
 ```
@@ -102,6 +109,23 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+### -DeviceOS
+Filter devices by operating system.
+Options: Android, iOS, Windows, All
+Default is All
+
+```yaml
+Type: String
+Parameter Sets: (All)
+Aliases:
+
+Required: False
+Position: 4
+Default value: All
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
 ### -ShowProgress
 Display progress as data is exported (default is silent / no progress shown)
 
@@ -118,7 +142,8 @@ Accept wildcard characters: False
 ```
 
 ### -graphApiVersion
-{{ Fill graphApiVersion Description }}
+Graph API version.
+Default is "beta"
 
 ```yaml
 Type: String
@@ -126,7 +151,7 @@ Parameter Sets: (All)
 Aliases:
 
 Required: False
-Position: 4
+Position: 5
 Default value: Beta
 Accept pipeline input: False
 Accept wildcard characters: False

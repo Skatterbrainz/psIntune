@@ -13,8 +13,8 @@ This function is used to get Intune Managed Devices from the Graph API REST inte
 ## SYNTAX
 
 ```
-Get-ManagedDevices [-UserName] <String> [[-DeviceName] <String>] [-IncludeEAS] [-ExcludeMDM]
- [<CommonParameters>]
+Get-ManagedDevices [-UserName] <String> [[-DeviceName] <String>] [[-DeviceOS] <String>] [-IncludeEAS]
+ [-ExcludeMDM] [[-graphApiVersion] <String>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -68,6 +68,23 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+### -DeviceOS
+Filter devices by operating system.
+Options: Android, iOS, Windows, All
+Default is All
+
+```yaml
+Type: String
+Parameter Sets: (All)
+Aliases:
+
+Required: False
+Position: 3
+Default value: All
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
 ### -IncludeEAS
 Switch to include EAS devices (not included by default)
 
@@ -94,6 +111,21 @@ Aliases:
 Required: False
 Position: Named
 Default value: False
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -graphApiVersion
+{{ Fill graphApiVersion Description }}
+
+```yaml
+Type: String
+Parameter Sets: (All)
+Aliases:
+
+Required: False
+Position: 4
+Default value: Beta
 Accept pipeline input: False
 Accept wildcard characters: False
 ```

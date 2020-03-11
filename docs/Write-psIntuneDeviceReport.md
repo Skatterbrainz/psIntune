@@ -15,7 +15,7 @@ Export Inventory Data to Excel Workbook
 ```
 Write-psIntuneDeviceReport [[-Devices] <Object>] [[-Apps] <Object>] [[-OutputFolder] <String>]
  [[-Title] <String>] [[-DeviceOS] <String>] [[-StaleLimit] <Int32>] [[-LowDiskGB] <Int32>] [-AzureAD]
- [-Overwrite] [-Show] [-NoDateStamp] [<CommonParameters>]
+ [-Overwrite] [-NoDateStamp] [-Show] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -33,7 +33,8 @@ PS C:\> {{ Add example code here }}
 ## PARAMETERS
 
 ### -Devices
-{{ Fill Devices Description }}
+Device Data queried from Intune using Get-psIntuneDevice -Detail Full
+If not provided, data will be queried from Intune
 
 ```yaml
 Type: Object
@@ -48,7 +49,8 @@ Accept wildcard characters: False
 ```
 
 ### -Apps
-{{ Fill Apps Description }}
+Apps data returned from Get-psIntuneDeviceApps
+If not provided, data will be queried from Intune
 
 ```yaml
 Type: Object
@@ -173,9 +175,8 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
-### -Show
-Display workbook when export is complete.
-Default is to not show
+### -NoDateStamp
+Do not include datestamp in the output filename (default is "_YYYY-MM-DD" suffix)
 
 ```yaml
 Type: SwitchParameter
@@ -189,8 +190,9 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
-### -NoDateStamp
-Do not include datestamp in the output filename (default is "_YYYY-MM-DD" suffix)
+### -Show
+Display workbook when export is complete.
+Default is to not show
 
 ```yaml
 Type: SwitchParameter
