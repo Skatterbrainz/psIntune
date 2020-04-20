@@ -1,6 +1,6 @@
 ---
 external help file: psIntune-help.xml
-Module Name: psIntune
+Module Name: psintune
 online version: https://github.com/Skatterbrainz/ds-intune/blob/master/docs/Get-psIntuneDeviceApps.md
 schema: 2.0.0
 ---

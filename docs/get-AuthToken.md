@@ -1,6 +1,6 @@
 ---
 external help file: psIntune-help.xml
-Module Name: psIntune
+Module Name: psintune
 online version:
 schema: 2.0.0
 ---
