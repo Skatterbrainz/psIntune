@@ -4,6 +4,8 @@ function Get-psIntuneAzureADDevices {
 		Return AzureAD device accounts
 	.DESCRIPTION
 		Return all AzureAD tenant device accounts
+	.PARAMETER UserName
+		Account for logging into AzureAD
 	.EXAMPLE
 		Get-psIntuneAzureADDevices
 	.NOTES
@@ -12,15 +14,18 @@ function Get-psIntuneAzureADDevices {
 		https://github.com/Skatterbrainz/ds-intune/blob/master/docs/Get-psIntuneAzureADDevices.md
 	#>
 	[CmdletBinding()]
-	param()
+	param (
+		[parameter()][string]$UserName = $global:psintuneuser
+	)
 	try {
-		if (!$AADCred) { 
-			Write-Host "Connecting to AzureAD, you may be required to confirm MFA" -ForegroundColor Yellow
-			$Global:AADCred = Connect-AzureAD 
+		if ([string]::IsNullOrEmpty($UserName)) { throw "username was not provided" }
+		#Get-psIntuneAuth -UserName $UserName
+		if ($null -eq $global:aadauth) {
+			$connect = Connect-AzureAd -AccountId $UserName
+			$global:aadauth = $connect
 		}
-		if (!$AADCred) {
-			throw "AzureAD authentication was not completed"
-		}
+		if (!$connect) { throw "AzureAD authentication was not completed" }
+
 		Write-Host "Requesting devices from Azure AD tenant" -ForegroundColor Cyan
 		$aadcomps = Get-AzureADDevice -All $True
 		Write-Host "Returned $($aadcomps.Count) devices from Azure AD" -ForegroundColor Cyan

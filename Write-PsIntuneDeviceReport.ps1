@@ -4,16 +4,19 @@ function Write-psIntuneDeviceReport {
 		Export Inventory Data to Excel Workbook
 	.DESCRIPTION
 		Export Intune Device inventory data to Excel Workbook
-	.PARAMETER Devices
+	.PARAMETER IntuneDevices
 		Device Data queried from Intune using Get-psIntuneDevice -Detail Full
 		If not provided, data will be queried from Intune
-	.PARAMETER Apps
+	.PARAMETER IntuneApps
 		Apps data returned from Get-psIntuneDeviceApps
 		If not provided, data will be queried from Intune
+	.PARAMETER AadDevices
+		Device accounts from Azure AD.  If not provided, this data set is 
+		simply excluded from the report.
 	.PARAMETER OutputFolder
 		Path for output file. Default is current user Documents path
 	.PARAMETER Title
-		Title to use for output filename
+		Title to use for output filename, typically a customer or project name
 	.PARAMETER DeviceOS
 		Filter devices by operating system. Options: Android, iOS, Windows, All
 		Default is All
@@ -23,36 +26,37 @@ function Write-psIntuneDeviceReport {
 	.PARAMETER LowDiskGB
 		Free disk space GB to indicate "low disk space".
 		Default is 20
-	.PARAMETER AzureAD
-		Includes AzureAD device accounts with report
 	.PARAMETER Overwrite
 		If output file exists, with same name, it will be overwritten.
 		Default is to abort if idential filename exists.
-	.PARAMETER NoDateStamp
-		Do not include datestamp in the output filename (default is "_YYYY-MM-DD" suffix)
+	.PARAMETER DateStamp
+		Include datestamp in the output filename (default is "_YYYY-MM-DD" suffix)
 	.PARAMETER Show
 		Display workbook when export is complete. Default is to not show
 	#>
 	[CmdletBinding()]
 	param (
-		[parameter()] $Devices,
-		[parameter()] $Apps,
+		[parameter(Mandatory)] [ValidateNotNullOrEmpty()] $IntuneDevices,
+		[parameter(Mandatory)] [ValidateNotNullOrEmpty()] $IntuneApps,
+		[parameter()] $AadDevices, 
 		[parameter()][string] $OutputFolder = "$($env:USERPROFILE)\Documents",
 		[parameter()][string] $Title = "",
 		[parameter()][string][ValidateSet('All','Windows','Android','iOS')] $DeviceOS = 'All',
 		[parameter()][ValidateRange(1,1000)][int] $StaleLimit = 180,
 		[parameter()][ValidateRange(0,100)][int] $LowDiskGB = 20,
-		[parameter()][switch] $AzureAD,
+#		[parameter()][switch] $AzureAD,
 		[parameter()][switch] $Overwrite,
-		[parameter()][switch] $NoDateStamp,
+		[parameter()][switch] $DateStamp,
 		[parameter()][switch] $Show
 	)
 	$time1 = Get-Date
 	Write-Host "Gathering data to generate report"
-	if ($AzureAD) {
-		$aadevs = Get-psIntuneAzureADDevices
+	if ($null -ne $AadDevices) {
+		$AzureAD = $True
+		$aadevs = $AadDevices
+		#$aadevs = Get-psIntuneAzureADDevices -UserName $global:psintuneuser
 	}
-	if ($NoDateStamp) {
+	if (!$DateStamp) {
 		$xlFile = "$OutputFolder\IntuneDevices`_$Title.xlsx"
 	}
 	else {
@@ -64,17 +68,20 @@ function Write-psIntuneDeviceReport {
 		Write-Warning "Output file exists [$xlFile]. Use -Overwrite to replace."
 		break
 	}
-	if ($null -eq $Devices) {
+	if ($null -eq $IntuneDevices) {
 		Write-Host "Requesting new query results..."
 		$devs = Get-psIntuneDevice -Detail Detailed -ShowProgress
 	}
 	else {
-		$devs = $Devices
+		$devs = $IntuneDevices
 	}
 
-	if ($null -eq $Apps) {
+	if ($null -eq $IntuneApps) {
 		Write-Host "Requesting application inventory for each device..."
-		$Apps = Get-psIntuneDeviceApps -Devices $devs -UserName $UserName -ShowProgress
+		$apps = Get-psIntuneDeviceApps -Devices $devs -UserName $UserName -ShowProgress
+	}
+	else {
+		$apps = $IntuneApps
 	}
 
 	Write-Host "Returned $($devs.Count) devices"
@@ -121,7 +128,7 @@ function Write-psIntuneDeviceReport {
 	$distapps = $apps.apps | Select-Object displayName,version | Sort-Object displayName -Unique
 	if ($AzureAD) {
 		if ($DeviceOS -ne 'All') {
-			$aadevs = $aadevs | Where-Object { $_.OSName -match $DeviceOS }
+			$aadevs = $aadevs | Where-Object { $_.OSName -match $DeviceOS } | Sort-Object Name 
 			Write-Verbose "returned $($aadevs.Count) AzureAD devices running $DeviceOS"
 		}
 		$aadx = $aadevs | Select-Object Name,OSName,OSVersion | Sort-Object Name -Unique

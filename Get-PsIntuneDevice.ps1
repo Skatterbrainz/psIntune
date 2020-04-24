@@ -44,13 +44,15 @@ function Get-psIntuneDevice {
 	[CmdletBinding()]
 	[OutputType([hashtable])]
 	param (
-		[parameter(Mandatory)][string] $UserName,
+		[parameter()][string] $UserName = $($global:psintuneuser),
 		[parameter()][string] $DeviceName = "",
 		[parameter()][ValidateSet('Full','Detailed','Summary','Raw')][string] $Detail = 'Summary',
 		[parameter()][string][ValidateSet('All','Windows','Android','iOS')] $DeviceOS = 'All',
 		[parameter()][switch] $ShowProgress,
 		[parameter()][string] $graphApiVersion = "beta"
 	)
+	if ([string]::IsNullOrEmpty($UserName)) { throw "UserName was not provided" }
+	$global:psintuneuser = $UserName
 	try {
 		if (![string]::IsNullOrEmpty($DeviceName)) {
 			$devices = Get-ManagedDevices -Username $UserName -DeviceName $DeviceName

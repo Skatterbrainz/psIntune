@@ -26,10 +26,12 @@ function Get-psIntuneDeviceApps {
 	[CmdletBinding()]
 	param (
 		[parameter(Mandatory)][ValidateNotNullOrEmpty()] $Devices,
-		[parameter(Mandatory)][ValidateNotNullOrEmpty()][string] $UserName,
+		[parameter()][string] $UserName = $($global:psintuneuser),
 		[parameter()][switch] $ShowProgress,
 		[parameter()][string] $graphApiVersion = "beta"
 	)
+	if ([string]::IsNullOrEmpty($UserName)) { throw "Username was not provided" }
+	$global:psintuneuser = $UserName
 	Get-psIntuneAuth -UserName $UserName
 	$dcount = $Devices.Count
 	$dx = 1

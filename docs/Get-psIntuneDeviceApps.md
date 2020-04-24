@@ -1,6 +1,6 @@
 ---
 external help file: psIntune-help.xml
-Module Name: psintune
+Module Name: psIntune
 online version: https://github.com/Skatterbrainz/ds-intune/blob/master/docs/Get-psIntuneDeviceApps.md
 schema: 2.0.0
 ---
@@ -13,7 +13,7 @@ Queries Installed Apps on Intune devices
 ## SYNTAX
 
 ```
-Get-psIntuneDeviceApps [-Devices] <Object> [-UserName] <String> [-ShowProgress] [[-graphApiVersion] <String>]
+Get-psIntuneDeviceApps [-Devices] <Object> [[-UserName] <String>] [-ShowProgress] [[-graphApiVersion] <String>]
  [<CommonParameters>]
 ```
 
@@ -57,9 +57,9 @@ Type: String
 Parameter Sets: (All)
 Aliases:
 
-Required: True
+Required: False
 Position: 2
-Default value: None
+Default value: $($global:psintuneuser)
 Accept pipeline input: False
 Accept wildcard characters: False
 ```

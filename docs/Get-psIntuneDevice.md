@@ -1,6 +1,6 @@
 ---
 external help file: psIntune-help.xml
-Module Name: psintune
+Module Name: psIntune
 online version: https://github.com/Skatterbrainz/ds-intune/blob/master/docs/Get-psIntuneDevice.md
 schema: 2.0.0
 ---
@@ -13,7 +13,7 @@ Returns dataset of Intune-managed devices with inventoried apps
 ## SYNTAX
 
 ```
-Get-psIntuneDevice [-UserName] <String> [[-DeviceName] <String>] [[-Detail] <String>] [[-DeviceOS] <String>]
+Get-psIntuneDevice [[-UserName] <String>] [[-DeviceName] <String>] [[-Detail] <String>] [[-DeviceOS] <String>]
  [-ShowProgress] [[-graphApiVersion] <String>] [<CommonParameters>]
 ```
 
@@ -67,9 +67,9 @@ Type: String
 Parameter Sets: (All)
 Aliases:
 
-Required: True
+Required: False
 Position: 1
-Default value: None
+Default value: $($global:psintuneuser)
 Accept pipeline input: False
 Accept wildcard characters: False
 ```
