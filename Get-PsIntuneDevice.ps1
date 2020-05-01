@@ -101,6 +101,13 @@ function Get-psIntuneDevice {
 						Manufacturer = $Device.manufacturer
 						Model        = $Device.model 
 						UserName     = $Device.userDisplayName
+						UserEmail    = $Device.emailAddress
+						ManageState  = $Device.managementState
+						Encrypted    = $Device.isEncrypted
+						Registration = $Device.deviceRegistrationState
+						Enrollment   = $Device.deviceEnrollmentType
+						AzureADDevID = $Device.azureADDeviceId
+						AutoPilot    = $Device.autopilotEnrolled
 						EthernetMAC  = $Device.ethernetMacAddress
 						WiFiMAC      = $Device.WiFiMacAddress
 						MemoryGB     = $mem
@@ -112,10 +119,10 @@ function Get-psIntuneDevice {
 						Ownership    = $Device.ownerType
 						Category     = $Device.deviceCategoryDisplayName
 						EnrollDate   = $Device.enrolledDateTime
+						ManagedBy    = $Device.managementAgent
 						LastSyncTime = $LastSync
 						LastSyncDays = $SyncDays
 						Compliant    = $compliant
-						AutoPilot    = $Device.autopilotEnrolled
 					}	
 				}
 				'Full' {
@@ -132,6 +139,13 @@ function Get-psIntuneDevice {
 						Manufacturer = $Device.manufacturer
 						Model        = $Device.model 
 						UserName     = $Device.userDisplayName
+						UserEmail    = $Device.emailAddress
+						ManageState  = $Device.managementState
+						Encrypted    = $Device.isEncrypted
+						Registration = $Device.deviceRegistrationState
+						Enrollment   = $Device.deviceEnrollmentType
+						AzureADDevID = $Device.azureADDeviceId
+						AutoPilot    = $Device.autopilotEnrolled
 						EthernetMAC  = $Device.ethernetMacAddress
 						WiFiMAC      = $Device.WiFiMacAddress
 						MemoryGB     = $mem
@@ -143,10 +157,10 @@ function Get-psIntuneDevice {
 						Ownership    = $Device.ownerType
 						Category     = $Device.deviceCategoryDisplayName
 						EnrollDate   = $Device.enrolledDateTime
+						ManagedBy    = $Device.managementAgent
 						LastSyncTime = $LastSync
 						LastSyncDays = $SyncDays
 						Compliant    = $compliant
-						AutoPilot    = $Device.autopilotEnrolled
 						Apps         = $DetectedApps
 					}	
 				}
