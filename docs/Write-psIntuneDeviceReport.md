@@ -1,7 +1,7 @@
 ---
 external help file: psIntune-help.xml
 Module Name: psIntune
-online version: https://github.com/Skatterbrainz/ds-intune/blob/master/docs/Invoke-psIntuneAppQuery.md
+online version: https://github.com/Skatterbrainz/psIntune/blob/master/docs/Write-psIntuneDeviceReport.md
 schema: 2.0.0
 ---
 
@@ -92,7 +92,7 @@ Aliases:
 
 Required: False
 Position: 4
-Default value: "$($env:USERPROFILE)\Documents"
+Default value: "$([System.Environment]::GetFolderPath('Personal'))"
 Accept pipeline input: False
 Accept wildcard characters: False
 ```
@@ -218,3 +218,6 @@ This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable
 ## NOTES
 
 ## RELATED LINKS
+
+[https://github.com/Skatterbrainz/psIntune/blob/master/docs/Write-psIntuneDeviceReport.md](https://github.com/Skatterbrainz/psIntune/blob/master/docs/Write-psIntuneDeviceReport.md)
+

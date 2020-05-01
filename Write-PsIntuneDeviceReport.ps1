@@ -33,13 +33,15 @@ function Write-psIntuneDeviceReport {
 		Include datestamp in the output filename (default is "_YYYY-MM-DD" suffix)
 	.PARAMETER Show
 		Display workbook when export is complete. Default is to not show
+	.LINK
+		https://github.com/Skatterbrainz/psIntune/blob/master/docs/Write-psIntuneDeviceReport.md
 	#>
 	[CmdletBinding()]
 	param (
 		[parameter(Mandatory)] [ValidateNotNullOrEmpty()] $IntuneDevices,
 		[parameter(Mandatory)] [ValidateNotNullOrEmpty()] $IntuneApps,
 		[parameter()] $AadDevices, 
-		[parameter()][string] $OutputFolder = "$($env:USERPROFILE)\Documents",
+		[parameter()][string] $OutputFolder = "$([System.Environment]::GetFolderPath('Personal'))",
 		[parameter()][string] $Title = "",
 		[parameter()][string][ValidateSet('All','Windows','Android','iOS')] $DeviceOS = 'All',
 		[parameter()][ValidateRange(1,1000)][int] $StaleLimit = 180,
