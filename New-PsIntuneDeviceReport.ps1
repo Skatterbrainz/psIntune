@@ -12,6 +12,8 @@ function New-PsIntuneDeviceReport {
 		Filter devices by operating system. Options: Android, iOS, Windows, All. Default is All
 	.PARAMETER OutputFolder
 		Path for output file. Default is current user Documents path
+	.PARAMETER Show
+		Open results in Excel (if Excel is installed on the machine where script is executed)
 	.EXAMPLE
 		New-PsIntuneDeviceReport -UserName "john@contoso.com" -ReportName "Contoso" -DeviceOS 'Windows'
 	.LINK

@@ -14,7 +14,7 @@ Quick Report version of Write-PsIntuneDeviceReport
 
 ```
 New-PsIntuneDeviceReport [-UserName] <String> [-ReportName] <String> [[-DeviceOS] <String>]
- [[-OutputFolder] <String>] [<CommonParameters>]
+ [[-OutputFolder] <String>] [-Show] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -89,6 +89,21 @@ Aliases:
 Required: False
 Position: 4
 Default value: "$([System.Environment]::GetFolderPath('Personal'))"
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -Show
+Open results in Excel (if Excel is installed on the machine where script is executed)
+
+```yaml
+Type: SwitchParameter
+Parameter Sets: (All)
+Aliases:
+
+Required: False
+Position: Named
+Default value: False
 Accept pipeline input: False
 Accept wildcard characters: False
 ```
