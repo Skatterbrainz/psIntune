@@ -22,7 +22,8 @@ function New-PsIntuneDeviceReport {
 		[parameter(Mandatory)][ValidateNotNullOrEmpty()][string] $UserName,
 		[parameter(Mandatory)][ValidateNotNullOrEmpty()][string] $ReportName,
 		[parameter()][string][ValidateSet('All','Windows','Android','iOS')] $DeviceOS = 'All',
-		[parameter()][string] $OutputFolder = "$([System.Environment]::GetFolderPath('Personal'))"
+		[parameter()][string] $OutputFolder = "$([System.Environment]::GetFolderPath('Personal'))",
+		[parameter()][switch] $Show
 	)
 	try {
 		Write-Host "collecting Intune device hardware information..."
@@ -32,7 +33,12 @@ function New-PsIntuneDeviceReport {
 		Write-Host "collecting Intune device software inventory..."
 		$apps = Get-psIntuneDeviceApps -Devices $devs -UserName $UserName -ShowProgress
 		Write-Host "publishing inventory report..."
-		Write-psIntuneDeviceReport -IntuneDevices $devs -IntuneApps $apps -AadDevices $adevs -OutputFolder $OutputFolder -Title $ReportName -DeviceOS $DeviceOS -Overwrite
+		if ($Show) {
+			Write-psIntuneDeviceReport -IntuneDevices $devs -IntuneApps $apps -AadDevices $adevs -OutputFolder $OutputFolder -Title $ReportName -DeviceOS $DeviceOS -Overwrite -Show 
+		} else {
+			Write-psIntuneDeviceReport -IntuneDevices $devs -IntuneApps $apps -AadDevices $adevs -OutputFolder $OutputFolder -Title $ReportName -DeviceOS $DeviceOS -Overwrite
+		}
+		
 	}
 	catch {
 		Write-Error $_.Exception.Message 
