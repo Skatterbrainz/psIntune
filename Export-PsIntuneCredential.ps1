@@ -1,3 +1,17 @@
+<#
+.SYNOPSIS
+	Save PS Credential object to encoded XML file
+.DESCRIPTION
+	Save PS Credential object to encoded XML file
+.PARAMETER OutputFile
+	Path to XML file
+.PARAMETER Credential
+	Optional PS crecential object. If not provided, GUI prompt is provided
+.EXAMPLE
+	Export-PsIntuneCredential -OutputPath ".\cred_contoso_azure.xml"
+.EXAMPLE
+	Export-PsIntuneCredential -OutputPath ".\cred_contoso_azure.xml" -Credential $mycred
+#>
 function Export-PsIntuneCredential {
 	[CmdletBinding()]
 	param (
