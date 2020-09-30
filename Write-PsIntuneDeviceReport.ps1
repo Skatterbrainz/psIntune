@@ -15,7 +15,7 @@ function Write-psIntuneDeviceReport {
 		simply excluded from the report.
 	.PARAMETER OutputFolder
 		Path for output file. Default is current user Documents path
-	.PARAMETER Title
+	.PARAMETER ReportTitle
 		Title to use for output filename, typically a customer or project name
 	.PARAMETER DeviceOS
 		Filter devices by operating system. Options: Android, iOS, Windows, All
@@ -42,11 +42,10 @@ function Write-psIntuneDeviceReport {
 		[parameter(Mandatory)] [ValidateNotNullOrEmpty()] $IntuneApps,
 		[parameter()] $AadDevices, 
 		[parameter()][string] $OutputFolder = "$([System.Environment]::GetFolderPath('Personal'))",
-		[parameter()][string] $Title = "",
+		[parameter()][string] $ReportTitle = "",
 		[parameter()][string][ValidateSet('All','Windows','Android','iOS')] $DeviceOS = 'All',
 		[parameter()][ValidateRange(1,1000)][int] $StaleLimit = 180,
 		[parameter()][ValidateRange(0,100)][int] $LowDiskGB = 20,
-#		[parameter()][switch] $AzureAD,
 		[parameter()][switch] $Overwrite,
 		[parameter()][switch] $DateStamp,
 		[parameter()][switch] $Show
@@ -56,34 +55,18 @@ function Write-psIntuneDeviceReport {
 	if ($null -ne $AadDevices) {
 		$AzureAD = $True
 		$aadevs = $AadDevices
-		#$aadevs = Get-psIntuneAzureADDevices -UserName $global:psintuneuser
 	}
 	if (!$DateStamp) {
-		$xlFile = "$OutputFolder\IntuneDevices`_$Title.xlsx"
+		$xlFile = "$OutputFolder\IntuneDevices`_$ReportTitle.xlsx"
 	}
 	else {
-		$xlFile = "$OutputFolder\IntuneDevices`_$Title`_$(Get-Date -f 'yyyy-MM-dd').xlsx"
+		$xlFile = "$OutputFolder\IntuneDevices`_$ReportTitle`_$(Get-Date -f 'yyyy-MM-dd').xlsx"
 	}
 	
 	Write-Verbose "output file = $xlFile"
 	if ((Test-Path $xlFile) -and (!$Overwrite)) {
 		Write-Warning "Output file exists [$xlFile]. Use -Overwrite to replace."
 		break
-	}
-	if ($null -eq $IntuneDevices) {
-		Write-Host "Requesting new query results..."
-		$devs = Get-psIntuneDevice -Detail Detailed -ShowProgress
-	}
-	else {
-		$devs = $IntuneDevices
-	}
-
-	if ($null -eq $IntuneApps) {
-		Write-Host "Requesting application inventory for each device..."
-		$apps = Get-psIntuneDeviceApps -Devices $devs -UserName $UserName -ShowProgress
-	}
-	else {
-		$apps = $IntuneApps
 	}
 
 	Write-Host "Returned $($devs.Count) devices"
@@ -106,27 +89,27 @@ function Write-psIntuneDeviceReport {
 	Write-Host "Applying filter rule: Devices with Low Disk Space"
 	$lowdisk   = @($devs | Where-Object {$_.FreeSpaceGB -lt $LowDiskGB} | Select-Object * -ExcludeProperty Apps)
 	Write-Host "Applying filter rule: Software"
-	#$apps      = Get-psIntuneInstalledApps -DataSet $devs 
 
-	#$allapps = @($apps.apps | Where-Object {(![string]::IsNullOrEmpty($_.displayName)) -and ($_.displayName -notmatch '\. \.')} | Sort-Object displayName)
 	$allapps = $apps | Foreach-Object {
-		$dn = $_.DeviceName
-		$da = $_.apps
+		$dn    = $_.DeviceName
+		$owner = $_.DeviceOwner
+		$dom   = $_.Domain
+		$da    = $_.apps
 		$da | Foreach-Object {
 			if (![string]::IsNullOrEmpty($_.displayName) -and ($_.displayName -notmatch '\. \.')) {
 				[pscustomobject]@{
-					DeviceName = $dn
-					Product    = $_.displayName
-					Version    = $_.version
+					DeviceName  = $dn
+					DeviceOwner = $owner
+					Domain      = $dom
+					Product     = $_.displayName
+					Version     = $_.version
 				}
 			}
 		}
 	}
 	Write-Host "Applying filter rule: Software Install Counts"
-	#$appcounts = $apps | Group-Object -Property ProductName | Select-Object Count,Name | Sort-Object Name -Unique
 	$appcounts = $apps.apps | Where-Object {$_.DisplayName -notmatch '\. \.'} | Group-Object -Property DisplayName | Select-Object Count,Name | Sort-Object Count -Descending
 	Write-Host "Applying filter rule: Distinct Software Products"
-	#$distapps  = $apps | Select-Object ProductName,ProductType,DeviceName | Sort-Object ProductName -Unique
 	$distapps = $apps.apps | Select-Object displayName,version | Sort-Object displayName -Unique
 	if ($AzureAD) {
 		if ($DeviceOS -ne 'All') {
@@ -177,7 +160,7 @@ function Write-psIntuneDeviceReport {
 	Write-Host "Exporting datasets: Intune Devices with Low Disk Space ($($lowdisk.Count))"
 	$lowdisk | Export-Excel -Path $xlFile -WorksheetName "IntuneLowDisk" -ClearSheet -AutoSize -AutoFilter -FreezeTopRowFirstColumn
 	Write-Host "Exporting datasets: Intune Installed Software ($($apps.apps.Count))"
-	$allapps | Sort-Object DeviceName,Product | Export-Excel -Path $xlFile -WorksheetName "IntuneSoftware" -ClearSheet -AutoSize -AutoFilter -FreezeTopRowFirstColumn
+	$allapps | Sort-Object DeviceName,DeviceOwner,Product | Export-Excel -Path $xlFile -WorksheetName "IntuneSoftware" -ClearSheet -AutoSize -AutoFilter -FreezeTopRowFirstColumn
 	Write-Host "Exporting datasets: Intune Software Install Counts ($($appcounts.Count))"
 	$appcounts | Export-Excel -Path $xlFile -WorksheetName "IntuneInstallCounts" -ClearSheet -AutoSize -AutoFilter -FreezeTopRow
 	Write-Host "Exporting datasets: Intune Software Distinct Products ($($distapps.Count))"

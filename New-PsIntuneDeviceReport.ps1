@@ -36,11 +36,10 @@ function New-PsIntuneDeviceReport {
 		$apps = Get-psIntuneDeviceApps -Devices $devs -UserName $UserName -ShowProgress
 		Write-Host "publishing inventory report..."
 		if ($Show) {
-			Write-psIntuneDeviceReport -IntuneDevices $devs -IntuneApps $apps -AadDevices $adevs -OutputFolder $OutputFolder -Title $ReportName -DeviceOS $DeviceOS -Overwrite -Show 
+			Write-psIntuneDeviceReport -IntuneDevices $devs -IntuneApps $apps -AadDevices $adevs -OutputFolder $OutputFolder -ReportTitle $ReportName -DeviceOS $DeviceOS -Overwrite -Show 
 		} else {
-			Write-psIntuneDeviceReport -IntuneDevices $devs -IntuneApps $apps -AadDevices $adevs -OutputFolder $OutputFolder -Title $ReportName -DeviceOS $DeviceOS -Overwrite
+			Write-psIntuneDeviceReport -IntuneDevices $devs -IntuneApps $apps -AadDevices $adevs -OutputFolder $OutputFolder -ReportTitle $ReportName -DeviceOS $DeviceOS -Overwrite
 		}
-		
 	}
 	catch {
 		Write-Error $_.Exception.Message 
