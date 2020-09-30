@@ -41,7 +41,6 @@ function Get-ManagedDevices(){
 		[parameter()][switch] $ExcludeMDM,
 		[parameter()][string] $graphApiVersion = "beta"
 	)
-	#$graphApiVersion = "beta"
 	$Resource = "deviceManagement/managedDevices"
 	try {
 		Get-psIntuneAuth -UserName $UserName
@@ -50,7 +49,6 @@ function Get-ManagedDevices(){
 		if ($ExcludeMDM.IsPresent){ $Count_Params++ }
 		if ($Count_Params -gt 1) {
 			Write-Warning "Multiple parameters set, specify a single parameter -IncludeEAS, -ExcludeMDM or no parameter against the function"
-			#Write-Host
 			break
 		}
 		elseif ($IncludeEAS) {
@@ -74,7 +72,6 @@ function Get-ManagedDevices(){
 				}
 			}
 			Write-Warning "EAS Devices are excluded by default, please use -IncludeEAS if you want to include those devices"
-			#Write-Host
 		}
 		Write-Verbose "uri = $uri"
 		$response = (Invoke-RestMethod -Uri $uri -Headers $authToken -Method Get)
@@ -96,7 +93,6 @@ function Get-ManagedDevices(){
 		$responseBody = $reader.ReadToEnd();
 		Write-Warning "Response content:`n$responseBody"
 		Write-Error "Request to $Uri failed with HTTP Status $($ex.Response.StatusCode) $($ex.Response.StatusDescription)"
-		Write-Host
 		break
 	}
 }
