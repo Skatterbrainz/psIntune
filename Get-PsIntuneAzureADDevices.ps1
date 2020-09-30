@@ -15,22 +15,33 @@ function Get-psIntuneAzureADDevices {
 	#>
 	[CmdletBinding()]
 	param (
-		[parameter()][string]$UserName = $global:psintuneuser
+		[parameter()][string]$UserName = $($global:psintuneuser)
 	)
 	try {
 		if ([string]::IsNullOrEmpty($UserName)) { throw "username was not provided" }
 		#Get-psIntuneAuth -UserName $UserName
 		if ($null -eq $global:aadauth) {
-			$connect = Connect-AzureAd -AccountId $UserName
-			$global:aadauth = $connect
+			$global:aadauth = Connect-AzureAd -AccountId $UserName -ErrorAction Stop
 		}
-		if (!$connect) { throw "AzureAD authentication was not completed" }
+		if (!$aadauth) { throw "AzureAD authentication was not completed" }
 
 		Write-Host "Requesting devices from Azure AD tenant" -ForegroundColor Cyan
 		$aadcomps = Get-AzureADDevice -All $True
 		Write-Host "Returned $($aadcomps.Count) devices from Azure AD" -ForegroundColor Cyan
 		$aadcomps | Foreach-Object {
 			$devname = $_.DisplayName
+			$owner   = $null
+			$upn     = $null
+			$devUserId = $($_.DevicePhysicalIds | Where-Object {$_ -match '\[USER\-GID\]'})
+			if ($null -ne $devUserId) {
+				$userGUID = $devUserId.Split(':')[1]
+				$user = $null
+				try {$user = Get-AzureADUser -ObjectId $userGUID -ErrorAction SilentlyContinue} catch {}
+				if ($null -ne $user) {
+					$owner = $user.DisplayName
+					$upn   = $user.UserPrincipalName
+				}
+			}
 			Write-Verbose "reading properties for: $devname"
 			$llogin = $_.ApproximateLastLogonTimeStamp
 			if (![string]::IsNullOrEmpty($llogin)) {
@@ -50,6 +61,8 @@ function Get-psIntuneAzureADDevices {
 				DeviceId       = $_.DeviceId
 				ObjectId       = $_.ObjectId
 				Enabled        = $_.AccountEnabled
+				OwnerName      = $owner
+				OwnerUPN       = $upn
 				OSName         = $_.DeviceOSType
 				OSVersion      = $_.DeviceOSVersion
 				TrustType      = $_.DeviceTrustType
