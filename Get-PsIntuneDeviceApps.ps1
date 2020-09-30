@@ -37,7 +37,9 @@ function Get-psIntuneDeviceApps {
 	$dx = 1
 	$Devices | ForEach-Object {
 		$DeviceID = $_.DeviceID
-		$Name = $_.DeviceName
+		$Name     = $_.DeviceName
+		$OwnerUPN = $_.UserUPN
+		$Domain   = $_.Domain
 		Write-Verbose "device name=$Name id=$DeviceID"
 		#[System.Collections.Generic.List[PSObject]] $Apps = @()
 		if ($ShowProgress) { 
@@ -54,9 +56,11 @@ function Get-psIntuneDeviceApps {
 		}
 		finally {
 			[pscustomobject]@{
-				DeviceName = $Name
-				DeviceID   = $DeviceID
-				Apps       = $apps
+				DeviceName  = $Name
+				DeviceID    = $DeviceID
+				DeviceOwner = $OwnerUPN
+				Domain      = $Domain
+				Apps        = $apps
 			}
 		}
 		$dx++

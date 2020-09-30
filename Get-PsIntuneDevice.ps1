@@ -80,10 +80,17 @@ function Get-psIntuneDevice {
 			$SyncDays = (New-TimeSpan -Start $LastSync -End (Get-Date)).Days
 			switch ($Detail) {
 				'Summary' {
+					$upn       = $Device.userPrincipalName
+					if (![string]::IsNullOrEmpty($upn)) {
+						$dom = $($upn -split '@')[1]
+					} else {
+						$dom = ""
+					}
 					[pscustomobject]@{
 						DeviceName   = $Device.DeviceName
 						DeviceID     = $DeviceID
 						UserName     = $Device.userDisplayName
+						Domain       = $dom
 						OSName       = $Device.operatingSystem 
 						OSVersion    = $Device.osVersion
 						LastSyncTime = $LastSync
@@ -95,6 +102,12 @@ function Get-psIntuneDevice {
 					$disksize  = [math]::Round(($Device.totalStorageSpaceInBytes / 1GB),2)
 					$freespace = [math]::Round(($Device.freeStorageSpaceInBytes / 1GB),2)
 					$mem       = [math]::Round(($Device.physicalMemoryInBytes / 1GB),2)
+					$upn       = $Device.userPrincipalName
+					if (![string]::IsNullOrEmpty($upn)) {
+						$dom = $($upn -split '@')[1]
+					} else {
+						$dom = ""
+					}
 					[pscustomobject]@{
 						DeviceName   = $Device.DeviceName
 						DeviceID     = $DeviceID
@@ -102,6 +115,8 @@ function Get-psIntuneDevice {
 						Model        = $Device.model 
 						UserName     = $Device.userDisplayName
 						UserEmail    = $Device.emailAddress
+						UserUPN      = $upn
+						Domain       = $dom
 						ManageState  = $Device.managementState
 						Encrypted    = $Device.isEncrypted
 						Registration = $Device.deviceRegistrationState
@@ -133,6 +148,12 @@ function Get-psIntuneDevice {
 					$disksize  = [math]::Round(($Device.totalStorageSpaceInBytes / 1GB),2)
 					$freespace = [math]::Round(($Device.freeStorageSpaceInBytes / 1GB),2)
 					$mem       = [math]::Round(($Device.physicalMemoryInBytes / 1GB),2)
+					$upn       = $Device.userPrincipalName
+					if (![string]::IsNullOrEmpty($upn)) {
+						$dom = $($upn -split '@')[1]
+					} else {
+						$dom = ""
+					}
 					[pscustomobject]@{
 						DeviceName   = $Device.DeviceName
 						DeviceID     = $DeviceID
@@ -140,6 +161,8 @@ function Get-psIntuneDevice {
 						Model        = $Device.model 
 						UserName     = $Device.userDisplayName
 						UserEmail    = $Device.emailAddress
+						UserUPN      = $upn
+						Domain       = $dom
 						ManageState  = $Device.managementState
 						Encrypted    = $Device.isEncrypted
 						Registration = $Device.deviceRegistrationState
