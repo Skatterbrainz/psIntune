@@ -15,7 +15,7 @@ function Write-psIntuneDeviceReport {
 		simply excluded from the report.
 	.PARAMETER OutputFolder
 		Path for output file. Default is current user Documents path
-	.PARAMETER ReportTitle
+	.PARAMETER ReportName
 		Title to use for output filename, typically a customer or project name
 	.PARAMETER DeviceOS
 		Filter devices by operating system. Options: Android, iOS, Windows, All
@@ -42,13 +42,13 @@ function Write-psIntuneDeviceReport {
 		[parameter(Mandatory)] [ValidateNotNullOrEmpty()] $IntuneApps,
 		[parameter()] $AadDevices, 
 		[parameter()][string] $OutputFolder = "$([System.Environment]::GetFolderPath('Personal'))",
-		[parameter()][string] $ReportTitle = "",
+		[parameter()][string] $ReportName = "",
 		[parameter()][string][ValidateSet('All','Windows','Android','iOS')] $DeviceOS = 'All',
 		[parameter()][ValidateRange(1,1000)][int] $StaleLimit = 180,
 		[parameter()][ValidateRange(0,100)][int] $LowDiskGB = 20,
-		[parameter()][switch] $Overwrite,
-		[parameter()][switch] $DateStamp,
-		[parameter()][switch] $Show
+		[parameter()][boolean] $Overwrite = $False,
+		[parameter()][boolean] $DateStamp = $False,
+		[parameter()][boolean] $Show = $False
 	)
 	$time1 = Get-Date
 	Write-Host "Gathering data to generate report"
@@ -56,15 +56,15 @@ function Write-psIntuneDeviceReport {
 		$AzureAD = $True
 		$aadevs = $AadDevices
 	}
-	if (!$DateStamp) {
-		$xlFile = "$OutputFolder\IntuneDevices`_$ReportTitle.xlsx"
+	if ($DateStamp -ne $True) {
+		$xlFile = "$OutputFolder\IntuneDevices`_$ReportName.xlsx"
 	}
 	else {
-		$xlFile = "$OutputFolder\IntuneDevices`_$ReportTitle`_$(Get-Date -f 'yyyy-MM-dd').xlsx"
+		$xlFile = "$OutputFolder\IntuneDevices`_$ReportName`_$(Get-Date -f 'yyyy-MM-dd').xlsx"
 	}
 	
 	Write-Verbose "output file = $xlFile"
-	if ((Test-Path $xlFile) -and (!$Overwrite)) {
+	if ((Test-Path $xlFile) -and ($Overwrite -ne $True)) {
 		Write-Warning "Output file exists [$xlFile]. Use -Overwrite to replace."
 		break
 	}
@@ -171,7 +171,7 @@ function Write-psIntuneDeviceReport {
 		Write-Host "Exporting datasets: Devices missing from Azure AD ($($aMissing.Count))"
 		$aMissing | Export-Excel -Path $xlFile -WorksheetName "AADMissing" -ClearSheet -AutoSize -AutoFilter -FreezeTopRowFirstColumn
 	}
-	if ($Show) { Start-Process -FilePath "$xlFile" }
+	if ($Show -eq $True) { Start-Process -FilePath "$xlFile" }
 	Write-Host "Export saved to $xlFile" -ForegroundColor Green
 
 	$time2 = Get-Date

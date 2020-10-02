@@ -15,26 +15,26 @@ function Get-psIntuneAzureADUser() {
 	.LINK
 		https://github.com/Skatterbrainz/ds-intune/blob/master/docs/Get-psIntuneAzureADUser.md
 	#>
-	[cmdletbinding()]
+	[CmdletBinding()]
 	param (
-		[parameter()][string] $userPrincipalName,
+		[parameter()][string] $UserPrincipalName,
 		[parameter()][string] $Property
 	)
 	$User_resource = "users"
 
 	try {
-		if ([string]::IsNullOrEmpty($userPrincipalName)) {
+		if ([string]::IsNullOrEmpty($UserPrincipalName)) {
 			$uri = "https://graph.microsoft.com/$graphApiVersion/$($User_resource)"
 			(Invoke-RestMethod -Uri $uri -Headers $authToken -Method Get).Value
 		}
 		else {
 			if ([string]::IsNullOrEmpty($Property)) {
-				$uri = "https://graph.microsoft.com/$graphApiVersion/$($User_resource)/$userPrincipalName"
+				$uri = "https://graph.microsoft.com/$graphApiVersion/$($User_resource)/$UserPrincipalName"
 				Write-Verbose $uri
 				Invoke-RestMethod -Uri $uri -Headers $authToken -Method Get
 			}
 			else {
-				$uri = "https://graph.microsoft.com/$graphApiVersion/$($User_resource)/$userPrincipalName/$Property"
+				$uri = "https://graph.microsoft.com/$graphApiVersion/$($User_resource)/$UserPrincipalName/$Property"
 				Write-Verbose $uri
 				(Invoke-RestMethod -Uri $uri -Headers $authToken -Method Get).Value
 			}
@@ -49,7 +49,6 @@ function Get-psIntuneAzureADUser() {
 		$responseBody = $reader.ReadToEnd();
 		Write-Host "Response content:`n$responseBody" -f Red
 		Write-Error "Request to $Uri failed with HTTP Status $($ex.Response.StatusCode) $($ex.Response.StatusDescription)"
-		#Write-Host
 		break
 	}
 }

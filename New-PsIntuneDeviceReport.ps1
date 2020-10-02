@@ -25,21 +25,17 @@ function New-PsIntuneDeviceReport {
 		[parameter(Mandatory)][ValidateNotNullOrEmpty()][string] $ReportName,
 		[parameter()][string][ValidateSet('All','Windows','Android','iOS')] $DeviceOS = 'All',
 		[parameter()][string] $OutputFolder = "$([System.Environment]::GetFolderPath('Personal'))",
-		[parameter()][switch] $Show
+		[parameter()][boolean] $Show = $False
 	)
 	try {
 		Write-Host "collecting Intune device hardware information..."
-		$devs = Get-psIntuneDevice -UserName $UserName -Detail Detailed -DeviceOS $DeviceOS -ShowProgress
+		$devs = Get-psIntuneDevice -UserName $UserName -Detail Detailed -DeviceOS $DeviceOS -ShowProgress:$True
 		Write-Host "collecting Azure AD device inventory..."
-		$adevs = Get-psIntuneAzureADDevices -UserName $UserName
+		$adevs = Get-psIntuneAzureADDevices -UserName $UserName -ShowProgress:$True
 		Write-Host "collecting Intune device software inventory..."
-		$apps = Get-psIntuneDeviceApps -Devices $devs -UserName $UserName -ShowProgress
+		$apps = Get-psIntuneDeviceApps -Devices $devs -UserName $UserName -ShowProgress:$True
 		Write-Host "publishing inventory report..."
-		if ($Show) {
-			Write-psIntuneDeviceReport -IntuneDevices $devs -IntuneApps $apps -AadDevices $adevs -OutputFolder $OutputFolder -ReportTitle $ReportName -DeviceOS $DeviceOS -Overwrite -Show 
-		} else {
-			Write-psIntuneDeviceReport -IntuneDevices $devs -IntuneApps $apps -AadDevices $adevs -OutputFolder $OutputFolder -ReportTitle $ReportName -DeviceOS $DeviceOS -Overwrite
-		}
+		Write-psIntuneDeviceReport -IntuneDevices $devs -IntuneApps $apps -AadDevices $adevs -OutputFolder $OutputFolder -ReportName $ReportName -DeviceOS $DeviceOS -Overwrite -Show:$Show
 	}
 	catch {
 		Write-Error $_.Exception.Message 

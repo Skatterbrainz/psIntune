@@ -48,7 +48,7 @@ function Get-psIntuneDevice {
 		[parameter()][string] $DeviceName = "",
 		[parameter()][ValidateSet('Full','Detailed','Summary','Raw')][string] $Detail = 'Summary',
 		[parameter()][string][ValidateSet('All','Windows','Android','iOS')] $DeviceOS = 'All',
-		[parameter()][switch] $ShowProgress,
+		[parameter()][boolean] $ShowProgress = $False,
 		[parameter()][string] $graphApiVersion = "beta"
 	)
 	if ([string]::IsNullOrEmpty($UserName)) { throw "UserName was not provided" }
@@ -72,7 +72,7 @@ function Get-psIntuneDevice {
 			Write-Warning "Full option takes the longest to process. This may take a few minutes."
 		}
 		foreach ($Device in $Devices){
-			if ($ShowProgress) { 
+			if ($ShowProgress -eq $True) { 
 				Write-Progress -Activity "Found $dcount Intune managed devices" -Status "Reading device $dx of $dcount" -PercentComplete $(($dx/$dcount)*100) -id 1
 			}
 			$DeviceID = $Device.id
@@ -80,7 +80,7 @@ function Get-psIntuneDevice {
 			$SyncDays = (New-TimeSpan -Start $LastSync -End (Get-Date)).Days
 			switch ($Detail) {
 				'Summary' {
-					$upn       = $Device.userPrincipalName
+					$upn = $Device.userPrincipalName
 					if (![string]::IsNullOrEmpty($upn)) {
 						$dom = $($upn -split '@')[1]
 					} else {

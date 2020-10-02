@@ -44,7 +44,7 @@ function Get-psIntuneDevicesWithApp {
 		[parameter(Mandatory)][ValidateNotNullOrEmpty()][string] $Application,
 		[parameter()][string] $Version,
 		[parameter(Mandatory)][ValidateNotNullOrEmpty()][string] $Username,
-		[parameter()][switch] $ShowProgress
+		[parameter()][boolean] $ShowProgress = $False
 	)
 	Write-Verbose "Getting authentication token"
 	$AuthHeader = Get-AuthToken -User $Username
@@ -63,7 +63,7 @@ function Get-psIntuneDevicesWithApp {
 		if (![string]::IsNullOrEmpty($Version)) {
 			$DetectedApp = $DetectedApp | Where-Object { $_.ProductVersion -eq $Version }
 		}
-		if ($DetectedApp) {
+		if ($null -ne $DetectedApp) {
 			$DetectedApp | 
 				Select-Object @{l='DeviceName';e={$Device.DeviceName}}, @{l='Application';e={$_.displayname}}, Version, SizeInByte,
 				@{l='LastSyncDateTime';e={$Device.lastSyncDateTime}}, @{l='DeviceId';e={$Device.id}} | 
@@ -71,6 +71,6 @@ function Get-psIntuneDevicesWithApp {
 		}
 		$wp++
 	}
-	if ($ShowProgress) { Write-Progress -Activity "Done" -Id 1 -Completed }
+	if ($ShowProgress -eq $True) { Write-Progress -Activity "Done" -Id 1 -Completed }
 	$FoundApp
 }

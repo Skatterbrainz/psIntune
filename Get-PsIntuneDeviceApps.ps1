@@ -27,22 +27,21 @@ function Get-psIntuneDeviceApps {
 	param (
 		[parameter(Mandatory)][ValidateNotNullOrEmpty()] $Devices,
 		[parameter()][string] $UserName = $($global:psintuneuser),
-		[parameter()][switch] $ShowProgress,
+		[parameter()][boolean] $ShowProgress = $False,
 		[parameter()][string] $graphApiVersion = "beta"
 	)
 	if ([string]::IsNullOrEmpty($UserName)) { throw "Username was not provided" }
-	$global:psintuneuser = $UserName
+	[string]$global:psintuneuser = $UserName
 	Get-psIntuneAuth -UserName $UserName
 	$dcount = $Devices.Count
 	$dx = 1
 	$Devices | ForEach-Object {
 		$DeviceID = $_.DeviceID
 		$Name     = $_.DeviceName
-		$OwnerUPN = $_.UserUPN
-		$Domain   = $_.Domain
+		$OwnerUPN = $_.UserUPN     # "jsmith@contoso.com"
+		$Domain   = $_.Domain      # "contoso.com"
 		Write-Verbose "device name=$Name id=$DeviceID"
-		#[System.Collections.Generic.List[PSObject]] $Apps = @()
-		if ($ShowProgress) { 
+		if ($ShowProgress -eq $True) { 
 			Write-Progress -Activity "Querying $dcount Intune managed devices" -Status "Reading device $dx of $dcount : $Name" -PercentComplete $(($dx/$dcount)*100) -id 1
 		}
 		try {

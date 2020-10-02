@@ -15,7 +15,8 @@ function Get-psIntuneAzureADDevices {
 	#>
 	[CmdletBinding()]
 	param (
-		[parameter()][string]$UserName = $($global:psintuneuser)
+		[parameter()][string]$UserName = $($global:psintuneuser),
+		[parameter()][switch]$ShowProgress
 	)
 	try {
 		if ([string]::IsNullOrEmpty($UserName)) { throw "username was not provided" }
@@ -27,11 +28,16 @@ function Get-psIntuneAzureADDevices {
 
 		Write-Host "Requesting devices from Azure AD tenant" -ForegroundColor Cyan
 		$aadcomps = Get-AzureADDevice -All $True
-		Write-Host "Returned $($aadcomps.Count) devices from Azure AD" -ForegroundColor Cyan
+		$acount = $aadcomps.Count
+		$dx = 1
+		Write-Host "Returned $($acount) devices from Azure AD" -ForegroundColor Cyan
 		$aadcomps | Foreach-Object {
 			$devname = $_.DisplayName
 			$owner   = $null
 			$upn     = $null
+			if ($ShowProgress) { 
+				Write-Progress -Activity "Querying $acount AzureAD devices" -Status "Reading device $dx of $acount : $devName" -PercentComplete $(($dx/$acount)*100) -id 1
+			}	
 			$devUserId = $($_.DevicePhysicalIds | Where-Object {$_ -match '\[USER\-GID\]'})
 			if ($null -ne $devUserId) {
 				$userGUID = $devUserId.Split(':')[1]
@@ -75,6 +81,7 @@ function Get-psIntuneAzureADDevices {
 				LastSyncDays   = $xSyncDays
 				ProfileType    = $_.ProfileType
 			}
+			$dx++
 		}
 	}
 	catch {

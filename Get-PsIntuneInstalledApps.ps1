@@ -23,13 +23,13 @@ function Get-psIntuneInstalledApps {
 	[CmdletBinding()]
 	param (
 		[parameter(Mandatory)][ValidateNotNull()] $DataSet,
-		[parameter()][switch] $GroupByName
+		[parameter()][boolean] $GroupByName = $False
 	)
 	$badnames = ('. .','. . .','..','...')
 	Write-Verbose "reading $($DataSet.Count) objects"
-	$appcount = 0
+	[int]$appcount = 0
 	$result = $DataSet | Foreach-Object {
-		$devicename = $_.DeviceName
+		[string]$devicename = $_.DeviceName
 		$apps = $_.Apps 
 		if ($null -ne $Apps) {
 			foreach ($app in $apps) {
@@ -37,13 +37,13 @@ function Get-psIntuneInstalledApps {
 				if (![string]::IsNullOrEmpty($displayName)) {
 					if ($displayName -notin $badnames) {
 						if ($($app.Id).Length -gt 36) {
-							$ptype = 'WindowsStore'
+							[string]$ptype = 'WindowsStore'
 						}
 						elseif ($($app.Id).Length -eq 36) {
-							$ptype = 'Win32'
+							[string]$ptype = 'Win32'
 						}
 						else {
-							$ptype = 'Other'
+							[string]$ptype = 'Other'
 						}
 						[pscustomobject]@{
 							ProductName    = $displayName
@@ -64,7 +64,7 @@ function Get-psIntuneInstalledApps {
 	if ($appcount -eq 0) {
 		Write-Warning "DataSet objects have no applications linked. Use [-Detail Full] option with Get-psIntuneDevice"
 	}
-	if ($GroupByName) {
+	if ($GroupByName -eq $True) {
 		$result | Group-Object -Property ProductName | Select-Object Count,Name | Sort-Object Name -Unique
 	}
 	else {
