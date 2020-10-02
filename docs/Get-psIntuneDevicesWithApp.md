@@ -1,6 +1,6 @@
 ---
 external help file: psIntune-help.xml
-Module Name: psintune
+Module Name: psIntune
 online version: https://github.com/Skatterbrainz/ds-intune/blob/master/docs/Get-psIntuneDevicesWithApp.md
 schema: 2.0.0
 ---
@@ -14,7 +14,7 @@ Returns Intune managed devices having a specified App installed
 
 ```
 Get-psIntuneDevicesWithApp [[-AppDataSet] <Object>] [-Application] <String> [[-Version] <String>]
- [-Username] <String> [-ShowProgress] [<CommonParameters>]
+ [-Username] <String> [[-ShowProgress] <Boolean>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -103,12 +103,12 @@ Accept wildcard characters: False
 Display progress during execution (default is silent / no progress shown)
 
 ```yaml
-Type: SwitchParameter
+Type: Boolean
 Parameter Sets: (All)
 Aliases:
 
 Required: False
-Position: Named
+Position: 5
 Default value: False
 Accept pipeline input: False
 Accept wildcard characters: False

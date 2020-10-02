@@ -13,8 +13,8 @@ Queries Installed Apps on Intune devices
 ## SYNTAX
 
 ```
-Get-psIntuneDeviceApps [-Devices] <Object> [[-UserName] <String>] [-ShowProgress] [[-graphApiVersion] <String>]
- [<CommonParameters>]
+Get-psIntuneDeviceApps [-Devices] <Object> [[-UserName] <String>] [[-ShowProgress] <Boolean>]
+ [[-graphApiVersion] <String>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -68,12 +68,12 @@ Accept wildcard characters: False
 Display progress as data is exported (default is silent / no progress shown)
 
 ```yaml
-Type: SwitchParameter
+Type: Boolean
 Parameter Sets: (All)
 Aliases:
 
 Required: False
-Position: Named
+Position: 3
 Default value: False
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -89,7 +89,7 @@ Parameter Sets: (All)
 Aliases:
 
 Required: False
-Position: 3
+Position: 4
 Default value: Beta
 Accept pipeline input: False
 Accept wildcard characters: False

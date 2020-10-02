@@ -5,57 +5,66 @@ online version: https://github.com/Skatterbrainz/ds-intune/blob/master/docs/Get-
 schema: 2.0.0
 ---
 
-# Get-psIntuneInstalledApps
+# Import-PsIntuneCredential
 
 ## SYNOPSIS
-Returns App inventory data from Intune Device data set
+Import PS Credential object from XML file
 
 ## SYNTAX
 
 ```
-Get-psIntuneInstalledApps [-DataSet] <Object> [[-GroupByName] <Boolean>] [<CommonParameters>]
+Import-PsIntuneCredential [[-Path] <String>] [[-Folder] <String>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
-Returns App inventory data from Intune Device data set
+Import PS Credential object from XML file
 
 ## EXAMPLES
 
 ### EXAMPLE 1
 ```
-$devices = Get-psIntuneDevice -UserName "john.doe@contoso.com"
+$mycred = Import-PsIntuneCredential -Path ".\cred_contoso_azure.xml"
 ```
 
-$applist = Get-psIntuneInstalledApps -DataSet $devices
+### EXAMPLE 2
+```
+$mycred = Import-PsIntuneCredential
+```
+
+### EXAMPLE 3
+```
+$mycred = Import-PsIntuneCredential -Folder "c:\credentials"
+```
 
 ## PARAMETERS
 
-### -DataSet
-Data returned from Get-psIntuneDevice
+### -Path
+Optional file path to XML file.
+If not provided, a GUI file selection form is provided
 
 ```yaml
-Type: Object
+Type: String
 Parameter Sets: (All)
 Aliases:
 
-Required: True
+Required: False
 Position: 1
 Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
-### -GroupByName
-{{ Fill GroupByName Description }}
+### -Folder
+Optional default search path when Path is not provide and GUI form is displayed for file selection
 
 ```yaml
-Type: Boolean
+Type: String
 Parameter Sets: (All)
 Aliases:
 
 Required: False
 Position: 2
-Default value: False
+Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
 ```
@@ -68,9 +77,5 @@ This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable
 ## OUTPUTS
 
 ## NOTES
-NAME: Get-psIntuneInstalledApps
 
 ## RELATED LINKS
-
-[https://github.com/Skatterbrainz/ds-intune/blob/master/docs/Get-psIntuneInstalledApps.md](https://github.com/Skatterbrainz/ds-intune/blob/master/docs/Get-psIntuneInstalledApps.md)
-

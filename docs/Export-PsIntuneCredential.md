@@ -1,40 +1,43 @@
 ---
 external help file: psIntune-help.xml
 Module Name: psIntune
-online version: https://github.com/Skatterbrainz/ds-intune/blob/master/docs/Get-psIntuneInstalledApps.md
+online version:
 schema: 2.0.0
 ---
 
-# Get-psIntuneInstalledApps
+# Export-PsIntuneCredential
 
 ## SYNOPSIS
-Returns App inventory data from Intune Device data set
+Save PS Credential object to encoded XML file
 
 ## SYNTAX
 
 ```
-Get-psIntuneInstalledApps [-DataSet] <Object> [[-GroupByName] <Boolean>] [<CommonParameters>]
+Export-PsIntuneCredential [-OutputFile] <String> [[-Credential] <PSCredential>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
-Returns App inventory data from Intune Device data set
+Save PS Credential object to encoded XML file
 
 ## EXAMPLES
 
 ### EXAMPLE 1
 ```
-$devices = Get-psIntuneDevice -UserName "john.doe@contoso.com"
+Export-PsIntuneCredential -OutputPath ".\cred_contoso_azure.xml"
 ```
 
-$applist = Get-psIntuneInstalledApps -DataSet $devices
+### EXAMPLE 2
+```
+Export-PsIntuneCredential -OutputPath ".\cred_contoso_azure.xml" -Credential $mycred
+```
 
 ## PARAMETERS
 
-### -DataSet
-Data returned from Get-psIntuneDevice
+### -OutputFile
+Path to XML file
 
 ```yaml
-Type: Object
+Type: String
 Parameter Sets: (All)
 Aliases:
 
@@ -45,17 +48,18 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
-### -GroupByName
-{{ Fill GroupByName Description }}
+### -Credential
+Optional PS crecential object.
+If not provided, GUI prompt is provided
 
 ```yaml
-Type: Boolean
+Type: PSCredential
 Parameter Sets: (All)
 Aliases:
 
 Required: False
 Position: 2
-Default value: False
+Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
 ```
@@ -68,9 +72,5 @@ This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable
 ## OUTPUTS
 
 ## NOTES
-NAME: Get-psIntuneInstalledApps
 
 ## RELATED LINKS
-
-[https://github.com/Skatterbrainz/ds-intune/blob/master/docs/Get-psIntuneInstalledApps.md](https://github.com/Skatterbrainz/ds-intune/blob/master/docs/Get-psIntuneInstalledApps.md)
-

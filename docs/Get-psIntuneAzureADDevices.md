@@ -13,7 +13,7 @@ Return AzureAD device accounts
 ## SYNTAX
 
 ```
-Get-psIntuneAzureADDevices [[-UserName] <String>] [<CommonParameters>]
+Get-psIntuneAzureADDevices [[-UserName] <String>] [-ShowProgress] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -38,7 +38,22 @@ Aliases:
 
 Required: False
 Position: 1
-Default value: $global:psintuneuser
+Default value: $($global:psintuneuser)
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -ShowProgress
+{{ Fill ShowProgress Description }}
+
+```yaml
+Type: SwitchParameter
+Parameter Sets: (All)
+Aliases:
+
+Required: False
+Position: Named
+Default value: False
 Accept pipeline input: False
 Accept wildcard characters: False
 ```

@@ -14,7 +14,7 @@ Quick Report version of Write-PsIntuneDeviceReport
 
 ```
 New-PsIntuneDeviceReport [-UserName] <String> [-ReportName] <String> [[-DeviceOS] <String>]
- [[-OutputFolder] <String>] [-Show] [<CommonParameters>]
+ [[-OutputFolder] <String>] [[-Show] <Boolean>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -97,12 +97,12 @@ Accept wildcard characters: False
 Open results in Excel (if Excel is installed on the machine where script is executed)
 
 ```yaml
-Type: SwitchParameter
+Type: Boolean
 Parameter Sets: (All)
 Aliases:
 
 Required: False
-Position: Named
+Position: 5
 Default value: False
 Accept pipeline input: False
 Accept wildcard characters: False

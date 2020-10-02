@@ -14,7 +14,7 @@ Returns dataset of Intune-managed devices with inventoried apps
 
 ```
 Get-psIntuneDevice [[-UserName] <String>] [[-DeviceName] <String>] [[-Detail] <String>] [[-DeviceOS] <String>]
- [-ShowProgress] [[-graphApiVersion] <String>] [<CommonParameters>]
+ [[-ShowProgress] <Boolean>] [[-graphApiVersion] <String>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -130,12 +130,12 @@ Accept wildcard characters: False
 Display progress as data is exported (default is silent / no progress shown)
 
 ```yaml
-Type: SwitchParameter
+Type: Boolean
 Parameter Sets: (All)
 Aliases:
 
 Required: False
-Position: Named
+Position: 5
 Default value: False
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -151,7 +151,7 @@ Parameter Sets: (All)
 Aliases:
 
 Required: False
-Position: 5
+Position: 6
 Default value: Beta
 Accept pipeline input: False
 Accept wildcard characters: False

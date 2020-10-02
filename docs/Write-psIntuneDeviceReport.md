@@ -14,8 +14,9 @@ Export Inventory Data to Excel Workbook
 
 ```
 Write-psIntuneDeviceReport [-IntuneDevices] <Object> [-IntuneApps] <Object> [[-AadDevices] <Object>]
- [[-OutputFolder] <String>] [[-Title] <String>] [[-DeviceOS] <String>] [[-StaleLimit] <Int32>]
- [[-LowDiskGB] <Int32>] [-Overwrite] [-DateStamp] [-Show] [<CommonParameters>]
+ [[-OutputFolder] <String>] [[-ReportName] <String>] [[-DeviceOS] <String>] [[-StaleLimit] <Int32>]
+ [[-LowDiskGB] <Int32>] [[-Overwrite] <Boolean>] [[-DateStamp] <Boolean>] [[-Show] <Boolean>]
+ [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -97,7 +98,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
-### -Title
+### -ReportName
 Title to use for output filename, typically a customer or project name
 
 ```yaml
@@ -166,12 +167,12 @@ If output file exists, with same name, it will be overwritten.
 Default is to abort if idential filename exists.
 
 ```yaml
-Type: SwitchParameter
+Type: Boolean
 Parameter Sets: (All)
 Aliases:
 
 Required: False
-Position: Named
+Position: 9
 Default value: False
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -181,12 +182,12 @@ Accept wildcard characters: False
 Include datestamp in the output filename (default is "_YYYY-MM-DD" suffix)
 
 ```yaml
-Type: SwitchParameter
+Type: Boolean
 Parameter Sets: (All)
 Aliases:
 
 Required: False
-Position: Named
+Position: 10
 Default value: False
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -197,12 +198,12 @@ Display workbook when export is complete.
 Default is to not show
 
 ```yaml
-Type: SwitchParameter
+Type: Boolean
 Parameter Sets: (All)
 Aliases:
 
 Required: False
-Position: Named
+Position: 11
 Default value: False
 Accept pipeline input: False
 Accept wildcard characters: False
