@@ -35,7 +35,7 @@ function New-PsIntuneDeviceReport {
 		Write-Host "collecting Intune device software inventory..."
 		$apps = Get-psIntuneDeviceApps -Devices $devs -UserName $UserName -ShowProgress:$True
 		Write-Host "publishing inventory report..."
-		Write-psIntuneDeviceReport -IntuneDevices $devs -IntuneApps $apps -AadDevices $adevs -OutputFolder $OutputFolder -ReportName $ReportName -DeviceOS $DeviceOS -Overwrite -Show:$Show
+		Write-psIntuneDeviceReport -IntuneDevices $devs -IntuneApps $apps -AadDevices $adevs -OutputFolder $OutputFolder -ReportName $ReportName -DeviceOS $DeviceOS -Overwrite:$True -Show:$Show
 	}
 	catch {
 		Write-Error $_.Exception.Message 
