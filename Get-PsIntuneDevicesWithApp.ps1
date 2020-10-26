@@ -32,7 +32,7 @@ function Get-psIntuneDevicesWithApp {
 	.NOTES
 		NAME: Get-psIntuneDevicesWithApp
 		This function was derived almost entirely from https://www.dowst.dev/search-intune-for-devices-with-application-installed/
-		(Thanks to Matt Dowst)
+		(Thanks to Matt Dowst!)
 
 	.LINK
 		https://github.com/Skatterbrainz/ds-intune/blob/master/docs/Get-psIntuneDevicesWithApp.md

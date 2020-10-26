@@ -10,6 +10,8 @@ function Get-psIntuneDeviceApps {
 		UserPrincipalName for authentication request
 	.PARAMETER ShowProgress
 		Display progress as data is exported (default is silent / no progress shown)
+	.PARAMETER Expand
+		Returns app information only. Default returns an object with Apps as a nested property
 	.PARAMETER graphApiVersion
 		Graph API version. Default is "beta"
 	.EXAMPLE
@@ -28,6 +30,7 @@ function Get-psIntuneDeviceApps {
 		[parameter(Mandatory)][ValidateNotNullOrEmpty()] $Devices,
 		[parameter()][string] $UserName = $($global:psintuneuser),
 		[parameter()][boolean] $ShowProgress = $False,
+		[parameter()][boolean] $Expand = $False,
 		[parameter()][string] $graphApiVersion = "beta"
 	)
 	if ([string]::IsNullOrEmpty($UserName)) { throw "Username was not provided" }
@@ -54,12 +57,16 @@ function Get-psIntuneDeviceApps {
 			Write-Warning "Failed to read device ($dx of $dcount) ID`=$DeviceID NAME`=$Name ERROR`=$($_.Exception.Message -join ';')"
 		}
 		finally {
-			[pscustomobject]@{
-				DeviceName  = $Name
-				DeviceID    = $DeviceID
-				DeviceOwner = $OwnerUPN
-				Domain      = $Domain
-				Apps        = $apps
+			if ($Expand -eq $True) {
+				$apps
+			} else {
+				[pscustomobject]@{
+					DeviceName  = $Name
+					DeviceID    = $DeviceID
+					DeviceOwner = $OwnerUPN
+					Domain      = $Domain
+					Apps        = $apps
+				}
 			}
 		}
 		$dx++

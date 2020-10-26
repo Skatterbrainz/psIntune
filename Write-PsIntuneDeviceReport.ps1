@@ -90,7 +90,7 @@ function Write-psIntuneDeviceReport {
 	$lowdisk   = @($devs | Where-Object {$_.FreeSpaceGB -lt $LowDiskGB} | Select-Object * -ExcludeProperty Apps)
 	Write-Host "Applying filter rule: Software"
 
-	$allapps = $apps | Foreach-Object {
+	$allapps = $IntuneApps | Foreach-Object {
 		$dn    = $_.DeviceName
 		$owner = $_.DeviceOwner
 		$dom   = $_.Domain
@@ -108,9 +108,9 @@ function Write-psIntuneDeviceReport {
 		}
 	}
 	Write-Host "Applying filter rule: Software Install Counts"
-	$appcounts = $apps.apps | Where-Object {$_.DisplayName -notmatch '\. \.'} | Group-Object -Property DisplayName | Select-Object Count,Name | Sort-Object Count -Descending
+	$appcounts = $IntuneApps.apps | Where-Object {$_.DisplayName -notmatch '\. \.'} | Group-Object -Property DisplayName | Select-Object Count,Name | Sort-Object Count -Descending
 	Write-Host "Applying filter rule: Distinct Software Products"
-	$distapps = $apps.apps | Select-Object displayName,version | Sort-Object displayName -Unique
+	$distapps = $IntuneApps.apps | Select-Object displayName,version | Sort-Object displayName -Unique
 	if ($AzureAD) {
 		if ($DeviceOS -ne 'All') {
 			$aadevs = $aadevs | Where-Object { $_.OSName -match $DeviceOS } | Sort-Object Name 
