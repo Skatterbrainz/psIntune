@@ -13,7 +13,7 @@ function Get-psIntuneAzureADUser() {
 	.NOTES
 		NAME: Get-psIntuneAzureADUser
 	.LINK
-		https://github.com/Skatterbrainz/ds-intune/blob/master/docs/Get-psIntuneAzureADUser.md
+		https://github.com/Skatterbrainz/psintune/blob/master/docs/Get-psIntuneAzureADUser.md
 	#>
 	[CmdletBinding()]
 	param (

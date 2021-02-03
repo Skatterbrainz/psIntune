@@ -11,6 +11,8 @@
 	Export-PsIntuneCredential -OutputPath ".\cred_contoso_azure.xml"
 .EXAMPLE
 	Export-PsIntuneCredential -OutputPath ".\cred_contoso_azure.xml" -Credential $mycred
+.LINK
+	https://github.com/Skatterbrainz/psintune/blob/master/docs/Export-PsIntuneCredential.md
 #>
 function Export-PsIntuneCredential {
 	[CmdletBinding()]

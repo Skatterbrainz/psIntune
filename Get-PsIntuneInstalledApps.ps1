@@ -17,7 +17,7 @@ function Get-psIntuneInstalledApps {
 		NAME: Get-psIntuneInstalledApps
 
 	.LINK
-		https://github.com/Skatterbrainz/ds-intune/blob/master/docs/Get-psIntuneInstalledApps.md
+		https://github.com/Skatterbrainz/psintune/blob/master/docs/Get-psIntuneInstalledApps.md
 
 	#>
 	[CmdletBinding()]

@@ -14,7 +14,7 @@ Queries Installed Apps on Intune devices
 
 ```
 Get-psIntuneDeviceApps [-Devices] <Object> [[-UserName] <String>] [[-ShowProgress] <Boolean>]
- [[-graphApiVersion] <String>] [<CommonParameters>]
+ [[-Expand] <Boolean>] [[-graphApiVersion] <String>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -79,6 +79,22 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+### -Expand
+Returns app information only.
+Default returns an object with Apps as a nested property
+
+```yaml
+Type: Boolean
+Parameter Sets: (All)
+Aliases:
+
+Required: False
+Position: 4
+Default value: False
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
 ### -graphApiVersion
 Graph API version.
 Default is "beta"
@@ -89,7 +105,7 @@ Parameter Sets: (All)
 Aliases:
 
 Required: False
-Position: 4
+Position: 5
 Default value: Beta
 Accept pipeline input: False
 Accept wildcard characters: False

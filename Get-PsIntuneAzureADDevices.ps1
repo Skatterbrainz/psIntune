@@ -11,7 +11,7 @@ function Get-psIntuneAzureADDevices {
 	.NOTES
 		Name: Get-psIntuneAzureADDevices
 	.LINK
-		https://github.com/Skatterbrainz/ds-intune/blob/master/docs/Get-psIntuneAzureADDevices.md
+		https://github.com/Skatterbrainz/psintune/blob/master/docs/Get-psIntuneAzureADDevices.md
 	#>
 	[CmdletBinding()]
 	param (

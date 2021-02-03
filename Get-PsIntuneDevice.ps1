@@ -39,7 +39,7 @@ function Get-psIntuneDevice {
 	.NOTES
 		NAME: Get-psIntuneDevice
 	.LINK
-		https://github.com/Skatterbrainz/ds-intune/blob/master/docs/Get-psIntuneDevice.md
+		https://github.com/Skatterbrainz/psintune/blob/master/docs/Get-psIntuneDevice.md
 	#>
 	[CmdletBinding()]
 	[OutputType([hashtable])]

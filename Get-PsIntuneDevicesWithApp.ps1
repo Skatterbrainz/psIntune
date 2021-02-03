@@ -35,7 +35,7 @@ function Get-psIntuneDevicesWithApp {
 		(Thanks to Matt Dowst!)
 
 	.LINK
-		https://github.com/Skatterbrainz/ds-intune/blob/master/docs/Get-psIntuneDevicesWithApp.md
+		https://github.com/Skatterbrainz/psintune/blob/master/docs/Get-psIntuneDevicesWithApp.md
 
 	#>
 	[CmdletBinding()]

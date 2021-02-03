@@ -13,6 +13,8 @@
 	$mycred = Import-PsIntuneCredential
 .EXAMPLE
 	$mycred = Import-PsIntuneCredential -Folder "c:\credentials"
+.LINK
+	https://github.com/Skatterbrainz/psintune/blob/master/docs/Import-PsIntuneCredential.md
 #>
 function Import-PsIntuneCredential {
 	[CmdletBinding()]

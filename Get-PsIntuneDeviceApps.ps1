@@ -23,7 +23,7 @@ function Get-psIntuneDeviceApps {
 	.NOTES
 		NAME: Get-psIntuneDeviceApps
 	.LINK
-		https://github.com/Skatterbrainz/ds-intune/blob/master/docs/Get-psIntuneDeviceApps.md
+		https://github.com/Skatterbrainz/psintune/blob/master/docs/Get-psIntuneDeviceApps.md
 	#>
 	[CmdletBinding()]
 	param (

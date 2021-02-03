@@ -25,7 +25,7 @@ function Invoke-psIntuneAppQuery {
 		NAME: Invoke-psIntuneAppQuery
 
 	.LINK
-		https://github.com/Skatterbrainz/ds-intune/blob/master/docs/Invoke-psIntuneAppQuery.md
+		https://github.com/Skatterbrainz/psintune/blob/master/docs/Invoke-psIntuneAppQuery.md
 
 	#>
 	[CmdletBinding()]
