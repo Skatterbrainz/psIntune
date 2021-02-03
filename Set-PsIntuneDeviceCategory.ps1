@@ -26,7 +26,7 @@ function Set-PSIntuneDeviceCategory {
 		DeviceManagementManagedDevice.Read.All / ReadWrite.All
 		0.1 - 2021-02-03 - David Stein, Catapult Systems
 	.LINK
-		https://github.com/Skatterbrainz/psintune/blob/master/docs/Set-PsIntuneDeviceCategory.md
+		https://github.com/Skatterbrainz/psIntune/blob/master/docs/Set-PSIntuneDeviceCategory.md
 	#>
 	[CmdletBinding(SupportsShouldProcess=$True,DefaultParameterSetName='ComputerName')]
 	param (
