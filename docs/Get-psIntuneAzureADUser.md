@@ -1,11 +1,11 @@
 ---
 external help file: psIntune-help.xml
 Module Name: psintune
-online version: https://github.com/Skatterbrainz/ds-intune/blob/master/docs/Get-psIntuneAzureADUser.md
+online version: https://github.com/Skatterbrainz/ds-intune/blob/master/docs/Get-psIntuneEntraUser.md
 schema: 2.0.0
 ---
 
-# Get-psIntuneAzureADUser
+# Get-psIntuneEntraUser
 
 ## SYNOPSIS
 This function is used to get AAD Users from the Graph API REST interface
@@ -13,7 +13,7 @@ This function is used to get AAD Users from the Graph API REST interface
 ## SYNTAX
 
 ```
-Get-psIntuneAzureADUser [[-userPrincipalName] <String>] [[-Property] <String>] [<CommonParameters>]
+Get-psIntuneEntraUser [[-userPrincipalName] <String>] [[-Property] <String>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -23,14 +23,14 @@ The function connects to the Graph API Interface and gets any users registered w
 
 ### EXAMPLE 1
 ```
-Get-psIntuneAzureADUser
+Get-psIntuneEntraUser
 ```
 
 Returns all users registered with Azure AD
 
 ### EXAMPLE 2
 ```
-Get-psIntuneAzureADUser -userPrincipleName user@domain.com
+Get-psIntuneEntraUser -userPrincipleName user@domain.com
 ```
 
 Returns specific user by UserPrincipalName registered with Azure AD
@@ -75,9 +75,9 @@ This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable
 ## OUTPUTS
 
 ## NOTES
-NAME: Get-psIntuneAzureADUser
+NAME: Get-psIntuneEntraUser
 
 ## RELATED LINKS
 
-[https://github.com/Skatterbrainz/ds-intune/blob/master/docs/Get-psIntuneAzureADUser.md](https://github.com/Skatterbrainz/ds-intune/blob/master/docs/Get-psIntuneAzureADUser.md)
+[https://github.com/Skatterbrainz/ds-intune/blob/master/docs/Get-psIntuneEntraUser.md](https://github.com/Skatterbrainz/ds-intune/blob/master/docs/Get-psIntuneEntraUser.md)
 

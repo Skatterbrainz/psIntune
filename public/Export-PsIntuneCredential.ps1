@@ -29,8 +29,7 @@ function Export-PsIntuneCredential {
 			$Credential | Export-Clixml $OutputFile -Force
 			Write-Host "credentials saved to: $OutputFile"
 		}
-	}
-	catch {
+	} catch {
 		Write-Error $_.Exception.Message 
 	}
 }

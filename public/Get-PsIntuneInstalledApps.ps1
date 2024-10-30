@@ -13,9 +13,6 @@ function Get-psIntuneInstalledApps {
 		$devices = Get-psIntuneDevice -UserName "john.doe@contoso.com"
 		$applist = Get-psIntuneInstalledApps -DataSet $devices
 
-	.NOTES
-		NAME: Get-psIntuneInstalledApps
-
 	.LINK
 		https://github.com/Skatterbrainz/psintune/blob/master/docs/Get-psIntuneInstalledApps.md
 
@@ -38,11 +35,9 @@ function Get-psIntuneInstalledApps {
 					if ($displayName -notin $badnames) {
 						if ($($app.Id).Length -gt 36) {
 							[string]$ptype = 'WindowsStore'
-						}
-						elseif ($($app.Id).Length -eq 36) {
+						} elseif ($($app.Id).Length -eq 36) {
 							[string]$ptype = 'Win32'
-						}
-						else {
+						} else {
 							[string]$ptype = 'Other'
 						}
 						[pscustomobject]@{
@@ -56,8 +51,7 @@ function Get-psIntuneInstalledApps {
 				}
 			}
 			$appcount++
-		}
-		else {
+		} else {
 			Write-Verbose "$devicename - has no apps"
 		}
 	}
@@ -66,8 +60,7 @@ function Get-psIntuneInstalledApps {
 	}
 	if ($GroupByName -eq $True) {
 		$result | Group-Object -Property ProductName | Select-Object Count,Name | Sort-Object Name -Unique
-	}
-	else {
+	} else {
 		$result
 	}
 }

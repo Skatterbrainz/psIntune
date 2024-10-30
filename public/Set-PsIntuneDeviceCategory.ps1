@@ -24,7 +24,6 @@ function Set-PSIntuneDeviceCategory {
 		Requires an Azure AD app registration with Application permissions assigned:
 		Device.Read / Read.All / ReadWrite.All
 		DeviceManagementManagedDevice.Read.All / ReadWrite.All
-		0.1 - 2021-02-03 - David Stein, Catapult Systems
 	.LINK
 		https://github.com/Skatterbrainz/psIntune/blob/master/docs/Set-PSIntuneDeviceCategory.md
 	#>
@@ -72,7 +71,7 @@ function Set-PSIntuneDeviceCategory {
 		Write-Verbose "connecting to: msgraph"
 		Connect-MSGraph
 
-		Update-MSGraphEnvironment -SchemaVersion 'beta' | Out-Null
+		$null = Update-MSGraphEnvironment -SchemaVersion 'beta'
 		[string]$baseUrl = "https://graph.microsoft.com/beta"
 
 		Write-Verbose "getting devices"
@@ -102,8 +101,7 @@ function Set-PSIntuneDeviceCategory {
 				Set-DeviceCategory -DeviceID $deviceid -category $DeviceCategory -BaseUrl $baseUrl
 			}
 		}
-	}
-	catch {
+	} catch {
 		Write-Error $_.Exception.Message
 	}
 }

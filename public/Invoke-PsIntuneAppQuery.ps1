@@ -21,9 +21,6 @@ function Invoke-psIntuneAppQuery {
 		$applist = Get-DsIntuneDeviceApps -DataSet $devices
 		$rows = Invoke-psIntuneAppQuery -AppDataSet $applist -ProductName "Acme Crapware 19.20 64-bit"
 
-	.NOTES
-		NAME: Invoke-psIntuneAppQuery
-
 	.LINK
 		https://github.com/Skatterbrainz/psintune/blob/master/docs/Invoke-psIntuneAppQuery.md
 
@@ -34,12 +31,13 @@ function Invoke-psIntuneAppQuery {
 		[parameter(Mandatory)][ValidateNotNullOrEmpty()][string] $ProductName
 	)
 	try {
-		$result = ($AppDataSet | Select-Object ProductName,DeviceName | Where-Object {$_.ProductName -eq $ProductName} | Sort-Object ProductName,DeviceName -Unique)
-	}
-	catch {
+		$result = ($AppDataSet | 
+			Select-Object ProductName,DeviceName |
+				Where-Object {$_.ProductName -eq $ProductName} |
+					Sort-Object ProductName,DeviceName -Unique)
+	} catch {
 		Write-Error $_.Exception.Message
-	}
-	finally {
+	} finally {
 		$result
 	}
 }

@@ -1,4 +1,4 @@
-function Get-ManagedDevices(){
+function Get-ManagedDevices {
 	<#
 	.SYNOPSIS
 		This function is used to get Intune Managed Devices from the Graph API REST interface
@@ -26,13 +26,10 @@ function Get-ManagedDevices(){
 
 		Returns all managed devices including EAS devices registered within the Intune Service
 
-	.NOTES
-		NAME: Get-ManagedDevices
-
 	.LINK
 		https://github.com/Skatterbrainz/psintune/blob/master/docs/Get-ManagedDevices.md
 	#>
-	[cmdletbinding()]
+	[CmdletBinding()]
 	param (
 		[parameter(Mandatory)][string] $UserName,
 		[parameter()][string] $DeviceName = "",
@@ -50,21 +47,17 @@ function Get-ManagedDevices(){
 		if ($Count_Params -gt 1) {
 			Write-Warning "Multiple parameters set, specify a single parameter -IncludeEAS, -ExcludeMDM or no parameter against the function"
 			break
-		}
-		elseif ($IncludeEAS) {
+		} elseif ($IncludeEAS) {
 			Write-Verbose "IncludeEAS = true"
 			$uri = "https://graph.microsoft.com/$graphApiVersion/$Resource"
-		}
-		elseif ($ExcludeMDM) {
+		} elseif ($ExcludeMDM) {
 			Write-Verbose "ExcludeMDM = true"
 			$uri = "https://graph.microsoft.com/$graphApiVersion/$Resource`?`$filter=managementAgent eq 'eas'"
-		}
-		else {
+		} else {
 			if (![string]::IsNullOrEmpty($DeviceName)) {
 				Write-Verbose "DeviceName = $DeviceName"
 				$uri = "https://graph.microsoft.com/$graphApiVersion/$Resource`?`$filter=deviceName eq '$DeviceName' and managementAgent eq 'mdm' and managementAgent eq 'easmdm'"
-			}
-			else {
+			} else {
 				Write-Verbose "Default = True"
 				$uri = "https://graph.microsoft.com/$graphApiVersion/$Resource`?`$filter=managementAgent eq 'mdm' and managementAgent eq 'easmdm'"
 				if ($DeviceOS -ne 'All') {
@@ -83,8 +76,7 @@ function Get-ManagedDevices(){
 			$Devices += $response.value 
 		}
 		$Devices
-	}
-	catch {
+	} catch {
 		$ex = $_.Exception
 		$errorResponse = $ex.Response.GetResponseStream()
 		$reader = New-Object System.IO.StreamReader($errorResponse)

@@ -1,2 +1,1 @@
-$mpath = $(Split-Path $Script:MyInvocation.MyCommand.Path)
-Get-ChildItem -Path $MPath -Filter '*.ps1' |  ForEach-Object { . $_.FullName }
+Get-ChildItem -Path $PSScriptRoot -Filter '*.ps1' -Recurse |  ForEach-Object { . $_.FullName }

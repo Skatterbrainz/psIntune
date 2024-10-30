@@ -30,7 +30,6 @@ function Get-psIntuneDevicesWithApp {
 		Returns list of Intune-managed devices which have any apps name containing "Putty" installed, and displays progress during execution
 
 	.NOTES
-		NAME: Get-psIntuneDevicesWithApp
 		This function was derived almost entirely from https://www.dowst.dev/search-intune-for-devices-with-application-installed/
 		(Thanks to Matt Dowst!)
 
@@ -65,9 +64,13 @@ function Get-psIntuneDevicesWithApp {
 		}
 		if ($null -ne $DetectedApp) {
 			$DetectedApp | 
-				Select-Object @{l='DeviceName';e={$Device.DeviceName}}, @{l='Application';e={$_.displayname}}, Version, SizeInByte,
-				@{l='LastSyncDateTime';e={$Device.lastSyncDateTime}}, @{l='DeviceId';e={$Device.id}} | 
-					Foreach-Object { $FoundApp.Add($_) }
+				Select-Object @{l='DeviceName';e={$Device.DeviceName}}, 
+					@{l='Application';e={$_.displayname}},
+					Version,
+					SizeInByte,
+					@{l='LastSyncDateTime';e={$Device.lastSyncDateTime}},
+					@{l='DeviceId';e={$Device.id}} | 
+						Foreach-Object { $FoundApp.Add($_) }
 		}
 		$wp++
 	}

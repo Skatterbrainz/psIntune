@@ -20,8 +20,6 @@ function Get-psIntuneDeviceApps {
 
 		Gathers all Intune managed devices without their installed apps, then passes
 		the $devices array to query the installed applications per device.
-	.NOTES
-		NAME: Get-psIntuneDeviceApps
 	.LINK
 		https://github.com/Skatterbrainz/psintune/blob/master/docs/Get-psIntuneDeviceApps.md
 	#>
@@ -52,8 +50,7 @@ function Get-psIntuneDeviceApps {
 			$DetectedApps = @(Invoke-RestMethod -Uri $uriApps -Headers $authToken -Method Get -ErrorAction SilentlyContinue | Select-Object detectedApps)
 			$apps = @($DetectedApps.detectedApps)
 			Write-Verbose "returned: $($apps.Count) apps"
-		}
-		catch {
+		} catch {
 			Write-Warning "Failed to read device ($dx of $dcount) ID`=$DeviceID NAME`=$Name ERROR`=$($_.Exception.Message -join ';')"
 		}
 		finally {
