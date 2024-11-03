@@ -34,4 +34,6 @@ function Set-DeviceCategory {
 		Write-Host "[WHAT-IF] would submit request to graph API" -ForegroundColor Cyan
 	}
 	#$result
+	Update-MgUserManagedDeviceCategory -DeviceID $DeviceID -CategoryID $CategoryID
+	Update-MgManagedDeviceDeviceCategory -DeviceID $DeviceID -CategoryID $CategoryID
 }
