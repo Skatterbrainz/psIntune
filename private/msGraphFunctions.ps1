@@ -149,6 +149,17 @@ function get-psIntuneAuth {
 	}
 }
 
+function New-AuthToken {
+	param ()
+	$token = Get-AzAccessToken
+	$result = @{
+		'Content-Type'='application/json'
+		'Authorization'="Bearer " + $($token.token)
+		'ExpiresOn'=$($token.ExpiresOn)
+	}
+	$result
+}
+
 function get-MsGraphData($Path) {
 	<#
 	.SYNOPSIS
